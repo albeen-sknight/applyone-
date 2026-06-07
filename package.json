@@ -1,0 +1,19 @@
+{
+  "name": "applyone",
+  "private": true,
+  "version": "0.1.0",
+  "description": "ApplyOne Phase 1 foundation",
+  "workspaces": [
+    "frontend",
+    "workers"
+  ],
+  "scripts": {
+    "dev:frontend": "npm run dev --workspace frontend",
+    "dev:worker": "npm run dev --workspace workers",
+    "build": "npm run build --workspace frontend && npm run build --workspace workers",
+    "typecheck": "npm run typecheck --workspace frontend && npm run typecheck --workspace workers"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

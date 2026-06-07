@@ -1,0 +1,13 @@
+name = "applyone-worker"
+main = "workers/src/index.ts"
+compatibility_date = "2026-06-07"
+compatibility_flags = ["nodejs_compat"]
+
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+[[d1_databases]]
+binding = "applyone_db"
+database_name = "applyone-db"
+database_id = "242e9bcc-0ef2-47fb-8824-53380c1a977a"
