@@ -1,13 +1,19 @@
-import { isStructuredCv, type StructuredCv } from "../types/cv";
+import { normalizeStructuredCv, type StructuredCv } from "../types/cv";
 
-const CV_PARSER_INSTRUCTION = `You are a CV parser. Extract the following fields from the CV text and return ONLY valid JSON, no markdown, no explanation:
+const CV_PARSER_INSTRUCTION = `You are a CV parser. Extract the candidate's CV into the exact JSON object shape below.
+Return ONLY JSON. Do not include markdown, code fences, commentary, or prose.
+Every key must be present. If a value is unknown, use an empty string or empty array.
+Dates may be imperfect; preserve date text exactly instead of omitting the entry.
+For education and certifications, keep entries in the most appropriate section. If they are mixed in the CV, separate them when possible.
+All string fields must be strings. All list fields must be arrays.
+
 {
-  experience: [{company, role, location, start, end, bullets[]}],
-  education: [{institution, degree, field, start, end}],
-  skills: [],
-  certifications: [{name, issuer, date}],
-  projects: [{name, description}],
-  languages: [{language, level}]
+  "experience": [{"company": "", "role": "", "location": "", "start": "", "end": "", "bullets": []}],
+  "education": [{"institution": "", "degree": "", "field": "", "start": "", "end": ""}],
+  "skills": [],
+  "certifications": [{"name": "", "issuer": "", "date": ""}],
+  "projects": [{"name": "", "description": ""}],
+  "languages": [{"language": "", "level": ""}]
 }`;
 
 type GeminiEnv = {
@@ -31,6 +37,17 @@ type GeminiResponse = {
   };
 };
 
+type GeminiRequestBody = {
+  systemInstruction: {
+    parts: Array<{ text: string }>;
+  };
+  contents: Array<{
+    role: "user";
+    parts: Array<{ text: string }>;
+  }>;
+  generationConfig: Record<string, unknown>;
+};
+
 export type InterviewMode = "hr" | "technical";
 export type InterviewLanguage = "es" | "en";
 export type InterviewTranscriptMessage = {
@@ -49,20 +66,77 @@ function stripJsonFences(text: string) {
     .trim();
 }
 
+function firstJsonObject(text: string): string | null {
+  const trimmed = stripJsonFences(text);
+  const start = trimmed.indexOf("{");
+
+  if (start === -1) {
+    return null;
+  }
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+
+  for (let index = start; index < trimmed.length; index += 1) {
+    const char = trimmed[index];
+
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+
+    if (char === "\\") {
+      escaped = true;
+      continue;
+    }
+
+    if (char === "\"") {
+      inString = !inString;
+      continue;
+    }
+
+    if (inString) {
+      continue;
+    }
+
+    if (char === "{") {
+      depth += 1;
+    }
+
+    if (char === "}") {
+      depth -= 1;
+
+      if (depth === 0) {
+        return trimmed.slice(start, index + 1);
+      }
+    }
+  }
+
+  return null;
+}
+
 function parseStructuredCv(text: string): StructuredCv {
   let parsed: unknown;
+  const jsonText = firstJsonObject(text);
+
+  if (!jsonText) {
+    throw new Error("Gemini no devolvio JSON valido.");
+  }
 
   try {
-    parsed = JSON.parse(stripJsonFences(text));
+    parsed = JSON.parse(jsonText);
   } catch {
     throw new Error("Gemini no devolvio JSON valido.");
   }
 
-  if (!isStructuredCv(parsed)) {
-    throw new Error("Gemini devolvio JSON con una estructura no valida.");
+  const normalized = normalizeStructuredCv(parsed);
+
+  if (!normalized) {
+    throw new Error("Gemini devolvio una respuesta sin datos suficientes para construir el perfil.");
   }
 
-  return parsed;
+  return normalized;
 }
 
 export async function parseCvWithGemini(rawText: string, env: GeminiEnv): Promise<StructuredCv> {
@@ -76,35 +150,119 @@ export async function parseCvWithGemini(rawText: string, env: GeminiEnv): Promis
 
   const model = env.GEMINI_MODEL || "gemini-2.5-flash";
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
-
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-goog-api-key": env.GEMINI_API_KEY
+  const baseBody: GeminiRequestBody = {
+    systemInstruction: {
+      parts: [{ text: CV_PARSER_INSTRUCTION }]
     },
-    body: JSON.stringify({
-      systemInstruction: {
-        parts: [{ text: CV_PARSER_INSTRUCTION }]
-      },
-      contents: [
-        {
-          role: "user",
-          parts: [
-            {
-              text: `Raw CV text:\n\n${rawText}`
-            }
-          ]
-        }
-      ],
-      generationConfig: {
-        responseMimeType: "application/json",
-        temperature: 0
+    contents: [
+      {
+        role: "user",
+        parts: [
+          {
+            text: `Raw CV text:\n\n${rawText}`
+          }
+        ]
       }
-    })
-  });
+    ],
+    generationConfig: {
+      responseMimeType: "application/json",
+      temperature: 0
+    }
+  };
+  const schema = {
+    type: "OBJECT",
+    properties: {
+      experience: {
+        type: "ARRAY",
+        items: {
+          type: "OBJECT",
+          properties: {
+            company: { type: "STRING" },
+            role: { type: "STRING" },
+            location: { type: "STRING" },
+            start: { type: "STRING" },
+            end: { type: "STRING" },
+            bullets: { type: "ARRAY", items: { type: "STRING" } }
+          }
+        }
+      },
+      education: {
+        type: "ARRAY",
+        items: {
+          type: "OBJECT",
+          properties: {
+            institution: { type: "STRING" },
+            degree: { type: "STRING" },
+            field: { type: "STRING" },
+            start: { type: "STRING" },
+            end: { type: "STRING" }
+          }
+        }
+      },
+      skills: { type: "ARRAY", items: { type: "STRING" } },
+      certifications: {
+        type: "ARRAY",
+        items: {
+          type: "OBJECT",
+          properties: {
+            name: { type: "STRING" },
+            issuer: { type: "STRING" },
+            date: { type: "STRING" }
+          }
+        }
+      },
+      projects: {
+        type: "ARRAY",
+        items: {
+          type: "OBJECT",
+          properties: {
+            name: { type: "STRING" },
+            description: { type: "STRING" }
+          }
+        }
+      },
+      languages: {
+        type: "ARRAY",
+        items: {
+          type: "OBJECT",
+          properties: {
+            language: { type: "STRING" },
+            level: { type: "STRING" }
+          }
+        }
+      }
+    },
+    required: ["experience", "education", "skills", "certifications", "projects", "languages"]
+  };
 
-  const data = (await response.json().catch(() => ({}))) as GeminiResponse;
+  async function requestGemini(body: GeminiRequestBody) {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-goog-api-key": env.GEMINI_API_KEY || ""
+      },
+      body: JSON.stringify(body)
+    });
+    const data = (await response.json().catch(() => ({}))) as GeminiResponse;
+    return { response, data };
+  }
+
+  const schemaBody: GeminiRequestBody = {
+    ...baseBody,
+    generationConfig: {
+      ...baseBody.generationConfig,
+      responseSchema: schema
+    }
+  };
+  let { response, data } = await requestGemini(schemaBody);
+
+  if (!response.ok) {
+    const message = data.error?.message || "";
+    if (response.status === 400 && /schema|responseSchema|response_schema/i.test(message)) {
+      ({ response, data } = await requestGemini(baseBody));
+    }
+  }
 
   if (!response.ok) {
     throw new Error(data.error?.message || "Error al llamar a Gemini.");
