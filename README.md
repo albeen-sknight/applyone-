@@ -6,6 +6,20 @@ The public site at `https://applyone.pages.dev` shows Alberto's profile and CV. 
 
 ApplyOne is not a hosted multi-user SaaS. To use it for yourself, fork it and self-host your own private instance.
 
+## Screenshots
+
+### Public portfolio landing page
+
+![ApplyOne public portfolio landing page](docs/screenshots/public-landing.png)
+
+### Owner login
+
+![ApplyOne owner login page](docs/screenshots/login.png)
+
+### Private workspace dashboard
+
+![ApplyOne private workspace dashboard](docs/screenshots/private-dashboard.png)
+
 ## Public Security Notice
 
 This repository is public.
