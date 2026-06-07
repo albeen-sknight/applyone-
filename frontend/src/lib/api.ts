@@ -158,6 +158,14 @@ export function emptyStructuredCv(): StructuredCv {
   };
 }
 
+
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
+
+function apiUrl(path: string): string {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${API_BASE_URL}${normalizedPath}`;
+}
+
 async function parseJsonResponse<T>(response: Response): Promise<T> {
   const data = (await response.json().catch(() => null)) as T | { error?: string } | null;
 
@@ -170,12 +178,12 @@ async function parseJsonResponse<T>(response: Response): Promise<T> {
 }
 
 export async function getProfile(): Promise<OwnerProfile> {
-  const response = await fetch("/api/profile");
+  const response = await fetch(apiUrl("/api/profile"));
   return parseJsonResponse<OwnerProfile>(response);
 }
 
 export async function parseCv(rawText: string): Promise<{ cv_raw_text: string; cv_structured: StructuredCv }> {
-  const response = await fetch("/api/profile/cv/parse", {
+  const response = await fetch(apiUrl("/api/profile/cv/parse"), {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ rawText })
@@ -185,7 +193,7 @@ export async function parseCv(rawText: string): Promise<{ cv_raw_text: string; c
 }
 
 export async function saveStructuredCv(cv: StructuredCv): Promise<OwnerProfile> {
-  const response = await fetch("/api/profile", {
+  const response = await fetch(apiUrl("/api/profile"), {
     method: "PUT",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ cv_structured: cv })
@@ -203,17 +211,17 @@ export async function getJobs(filters: JobFilters = {}): Promise<{ jobs: Job[] }
     }
   });
 
-  const response = await fetch(`/api/jobs${params.toString() ? `?${params.toString()}` : ""}`);
+  const response = await fetch(apiUrl(`/api/jobs${params.toString() ? `?${params.toString()}` : ""}`));
   return parseJsonResponse<{ jobs: Job[] }>(response);
 }
 
 export async function scrapeJobs(): Promise<ScrapeSummary> {
-  const response = await fetch("/api/jobs/scrape", { method: "POST" });
+  const response = await fetch(apiUrl("/api/jobs/scrape"), { method: "POST" });
   return parseJsonResponse<ScrapeSummary>(response);
 }
 
 export async function updateJobStatus(id: string, status: JobStatus): Promise<Job> {
-  const response = await fetch(`/api/jobs/${id}/status`, {
+  const response = await fetch(apiUrl(`/api/jobs/${id}/status`), {
     method: "PATCH",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ status })
@@ -227,17 +235,17 @@ export async function getApplications(filters: { status?: string; platform?: str
   Object.entries(filters).forEach(([key, value]) => {
     if (value) params.set(key, value);
   });
-  const response = await fetch(`/api/applications${params.toString() ? `?${params.toString()}` : ""}`);
+  const response = await fetch(apiUrl(`/api/applications${params.toString() ? `?${params.toString()}` : ""}`));
   return parseJsonResponse<{ applications: Application[] }>(response);
 }
 
 export async function getApplicationStats(): Promise<ApplicationStats> {
-  const response = await fetch("/api/applications/stats");
+  const response = await fetch(apiUrl("/api/applications/stats"));
   return parseJsonResponse<ApplicationStats>(response);
 }
 
 export async function createApplicationDraft(input: { job_id: string; status?: ApplicationStatus; notes?: string }): Promise<Application> {
-  const response = await fetch("/api/applications", {
+  const response = await fetch(apiUrl("/api/applications"), {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(input)
@@ -246,7 +254,7 @@ export async function createApplicationDraft(input: { job_id: string; status?: A
 }
 
 export async function generateCoverLetter(jobId: string): Promise<{ cover_letter: string; application_id: string; warning?: string }> {
-  const response = await fetch("/api/applications/generate-cover-letter", {
+  const response = await fetch(apiUrl("/api/applications/generate-cover-letter"), {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ job_id: jobId })
@@ -255,7 +263,7 @@ export async function generateCoverLetter(jobId: string): Promise<{ cover_letter
 }
 
 export async function updateApplication(id: string, input: Partial<Pick<Application, "cover_letter_used" | "status" | "notes" | "follow_up_date" | "form_platform" | "cv_version_used" | "auto_applied">>): Promise<Application> {
-  const response = await fetch(`/api/applications/${id}`, {
+  const response = await fetch(apiUrl(`/api/applications/${id}`), {
     method: "PUT",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(input)
@@ -264,7 +272,7 @@ export async function updateApplication(id: string, input: Partial<Pick<Applicat
 }
 
 export async function updateApplicationStatus(id: string, status: ApplicationStatus): Promise<Application> {
-  const response = await fetch(`/api/applications/${id}/status`, {
+  const response = await fetch(apiUrl(`/api/applications/${id}/status`), {
     method: "PATCH",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ status })
@@ -273,22 +281,22 @@ export async function updateApplicationStatus(id: string, status: ApplicationSta
 }
 
 export async function markApplicationApplied(id: string): Promise<Application> {
-  const response = await fetch(`/api/applications/${id}/mark-applied`, { method: "POST" });
+  const response = await fetch(apiUrl(`/api/applications/${id}/mark-applied`), { method: "POST" });
   return parseJsonResponse<Application>(response);
 }
 
 export async function getInterviewSessions(): Promise<{ sessions: InterviewSessionSummary[] }> {
-  const response = await fetch("/api/interview/sessions");
+  const response = await fetch(apiUrl("/api/interview/sessions"));
   return parseJsonResponse<{ sessions: InterviewSessionSummary[] }>(response);
 }
 
 export async function getInterviewSession(id: string): Promise<InterviewSession> {
-  const response = await fetch(`/api/interview/sessions/${id}`);
+  const response = await fetch(apiUrl(`/api/interview/sessions/${id}`));
   return parseJsonResponse<InterviewSession>(response);
 }
 
 export async function startInterviewSession(input: { mode: InterviewMode; language: InterviewLanguage }): Promise<{ session: InterviewSession; assistantMessage: InterviewMessage }> {
-  const response = await fetch("/api/interview/sessions", {
+  const response = await fetch(apiUrl("/api/interview/sessions"), {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(input)
@@ -297,7 +305,7 @@ export async function startInterviewSession(input: { mode: InterviewMode; langua
 }
 
 export async function sendInterviewMessage(id: string, content: string): Promise<{ session: InterviewSession; assistantMessage: InterviewMessage }> {
-  const response = await fetch(`/api/interview/sessions/${id}/message`, {
+  const response = await fetch(apiUrl(`/api/interview/sessions/${id}/message`), {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ content })
@@ -306,6 +314,6 @@ export async function sendInterviewMessage(id: string, content: string): Promise
 }
 
 export async function endInterviewSession(id: string): Promise<{ session: InterviewSession }> {
-  const response = await fetch(`/api/interview/sessions/${id}/end`, { method: "POST" });
+  const response = await fetch(apiUrl(`/api/interview/sessions/${id}/end`), { method: "POST" });
   return parseJsonResponse<{ session: InterviewSession }>(response);
 }
