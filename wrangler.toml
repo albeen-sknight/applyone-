@@ -8,7 +8,7 @@ AI_PROVIDER = "gemini"
 GEMINI_MODEL = "gemini-2.5-flash"
 
 [secrets]
-required = ["GEMINI_API_KEY"]
+required = ["GEMINI_API_KEY", "OWNER_PASSWORD_HASH", "SESSION_SECRET", "ALLOWED_ORIGINS"]
 
 [observability]
 enabled = true

@@ -10,7 +10,10 @@ export default {
         ink: "#17211b",
         olive: "#63705b",
         copper: "#b76e3c",
-        skyglass: "#dff1f7"
+        skyglass: "#dff1f7",
+        brand: "#86BC25",
+        brandSoft: "#a8d75c",
+        brandDark: "#4d7f16"
       }
     }
   },

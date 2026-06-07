@@ -1,87 +1,39 @@
-# Security Policy
+﻿# Security Policy
 
-## Supported Versions
-
-ApplyOne is currently a personal, single-owner project. Security fixes are applied to the `main` branch.
-
-| Version / Branch | Supported |
-| --- | --- |
-| `main` | Yes |
-| older commits / forks | No |
+ApplyOne is a public repository for a personal portfolio and a private, self-hostable job application workspace.
 
 ## Reporting a Vulnerability
 
-If you find a security issue, please **do not open a public GitHub issue**.
+Please use GitHub private vulnerability reporting when possible.
 
-Use GitHub's private vulnerability reporting for this repository if it is enabled, or contact the maintainer privately through the contact information listed on the public portfolio page.
+Do not open public issues for:
+- leaked secrets
+- authentication bypasses
+- session or cookie issues
+- CORS/security misconfigurations
+- private data exposure
 
-Please include:
+If private vulnerability reporting is unavailable, contact the repository owner directly without sharing exploit details publicly.
 
-- A clear description of the issue.
-- Steps to reproduce it.
-- Affected route, file, endpoint, or deployment area.
-- Whether any secret, token, CV data, or private application data may be exposed.
-- Suggested fix, if you have one.
+## Secret Handling
 
-## Sensitive Data
-
-This repository is public. Do not submit or commit:
-
-- `.env` files
+Never commit:
+- `.env` or `.dev.vars`
 - API keys
-- Cloudflare tokens
-- Gemini API keys
+- Gemini keys
 - owner passwords
-- password hashes from real passwords
+- password hashes generated from real passwords
 - session secrets
+- Cloudflare tokens
 - job-site credentials
-- private CVs or screenshots
-- Playwright run output
+- screenshots or logs containing private data
 
-The public CV file in `frontend/public/cv/` is intentionally published as part of the public portfolio.
+Worker secrets must be configured externally through Cloudflare Wrangler or the Cloudflare dashboard.
 
-## Private Workspace
+## Public Data
 
-ApplyOne includes a password-protected private workspace. The following areas should not be accessible without authentication:
+The CV file under `frontend/public/cv/` is intentionally public for the portfolio landing page. Do not place private documents in `frontend/public/`.
 
-- profile/CV parsing
-- job feed
-- applications
-- cover letters
-- interview prep sessions
-- private D1 data
-- Gemini-powered private API routes
+## Self-Hosting
 
-If you find a way to access private workspace data without authentication, report it privately.
-
-## Expected Response
-
-I will try to acknowledge valid reports as soon as practical and prioritize fixes based on impact.
-
-High-risk issues include:
-
-- exposed secrets
-- authentication bypass
-- private D1 data exposure
-- Gemini key exposure
-- unauthorized access to CV/application/interview data
-- credential leakage
-
-## Scope
-
-In scope:
-
-- Cloudflare Worker API
-- Cloudflare Pages frontend
-- D1 database access paths
-- authentication/session handling
-- CORS configuration
-- secret handling
-- public/private route separation
-
-Out of scope:
-
-- attacks requiring access to the maintainer's local machine
-- denial-of-service testing
-- spam, phishing, or social engineering
-- automated scraping or load testing of the public deployment
+Forks should configure their own Cloudflare Worker, D1 database, Gemini key, `OWNER_PASSWORD_HASH`, and `SESSION_SECRET`. Do not reuse secrets from another deployment.

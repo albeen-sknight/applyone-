@@ -14,16 +14,105 @@ export const searchVariants = [
 ];
 
 export function cleanText(value: string) {
-  return value
-    .replace(/<script[\s\S]*?<\/script>/gi, "")
-    .replace(/<style[\s\S]*?<\/style>/gi, "")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&quot;/g, "\"")
-    .replace(/&#39;/g, "'")
-    .replace(/&nbsp;/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  let output = "";
+  let tagName = "";
+  let entity = "";
+  let inTag = false;
+  let inEntity = false;
+  let ignoredTag: "script" | "style" | "noscript" | null = null;
+
+  const append = (text: string) => {
+    if (!ignoredTag) {
+      output += text;
+    }
+  };
+
+  const decodeEntity = (name: string) => {
+    const normalized = name.toLowerCase();
+    const named: Record<string, string> = {
+      amp: "&",
+      quot: "\"",
+      apos: "'",
+      "#39": "'",
+      nbsp: " ",
+      lt: "<",
+      gt: " "
+    };
+
+    if (named[normalized]) {
+      return named[normalized];
+    }
+
+    if (normalized.startsWith("#x")) {
+      const codePoint = Number.parseInt(normalized.slice(2), 16);
+      return Number.isFinite(codePoint) ? String.fromCodePoint(codePoint) : `&${name};`;
+    }
+
+    if (normalized.startsWith("#")) {
+      const codePoint = Number.parseInt(normalized.slice(1), 10);
+      return Number.isFinite(codePoint) ? String.fromCodePoint(codePoint) : `&${name};`;
+    }
+
+    return `&${name};`;
+  };
+
+  for (const char of value) {
+    if (inTag) {
+      if (char === ">") {
+        const normalizedTag = tagName.trim().toLowerCase().replace(/^\//, "").split(/\s+/)[0];
+        const closing = tagName.trim().startsWith("/");
+
+        if (!closing && (normalizedTag === "script" || normalizedTag === "style" || normalizedTag === "noscript")) {
+          ignoredTag = normalizedTag;
+        } else if (closing && normalizedTag === ignoredTag) {
+          ignoredTag = null;
+        }
+
+        append(" ");
+        tagName = "";
+        inTag = false;
+      } else {
+        tagName += char;
+      }
+      continue;
+    }
+
+    if (char === "<") {
+      inTag = true;
+      inEntity = false;
+      entity = "";
+      continue;
+    }
+
+    if (inEntity) {
+      if (char === ";") {
+        append(decodeEntity(entity));
+        entity = "";
+        inEntity = false;
+      } else if (entity.length > 12 || /\s/.test(char)) {
+        append(`&${entity}${char}`);
+        entity = "";
+        inEntity = false;
+      } else {
+        entity += char;
+      }
+      continue;
+    }
+
+    if (char === "&") {
+      inEntity = true;
+      entity = "";
+      continue;
+    }
+
+    append(char);
+  }
+
+  if (inEntity) {
+    append(`&${entity}`);
+  }
+
+  return output.split(/\s+/).join(" ").trim();
 }
 
 export function absoluteUrl(url: string, base: string) {

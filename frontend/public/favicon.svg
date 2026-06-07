@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="ApplyOne favicon">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#071008"/>
+      <stop offset="62%" stop-color="#101510"/>
+      <stop offset="100%" stop-color="#1f271f"/>
+    </linearGradient>
+    <linearGradient id="slash" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0%" stop-color="#86BC25" stop-opacity="0.25"/>
+      <stop offset="50%" stop-color="#86BC25" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#F7FFF2" stop-opacity="0.85"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="10" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect x="24" y="24" width="464" height="464" rx="108" fill="url(#bg)"/>
+  <path d="M111 381 L387 105" stroke="url(#slash)" stroke-width="34" stroke-linecap="round" filter="url(#glow)"/>
+  <path d="M111 381 L387 105" stroke="#86BC25" stroke-width="16" stroke-linecap="round"/>
+  <text x="256" y="292" text-anchor="middle"
+        font-family="Inter, Segoe UI, Arial, sans-serif"
+        font-weight="900" font-size="170" letter-spacing="-16"
+        fill="#F7FFF2">AO</text>
+  <circle cx="379" cy="134" r="27" fill="#86BC25"/>
+  <circle cx="379" cy="134" r="12" fill="#F7FFF2" opacity="0.92"/>
+</svg>

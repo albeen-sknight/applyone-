@@ -166,6 +166,19 @@ function apiUrl(path: string): string {
   return `${API_BASE_URL}${normalizedPath}`;
 }
 
+function apiFetch(path: string, init: RequestInit = {}) {
+  const headers = new Headers(init.headers);
+  if (init.body && !headers.has("content-type")) {
+    headers.set("content-type", "application/json");
+  }
+
+  return fetch(apiUrl(path), {
+    ...init,
+    credentials: "include",
+    headers
+  });
+}
+
 async function parseJsonResponse<T>(response: Response): Promise<T> {
   const data = (await response.json().catch(() => null)) as T | { error?: string } | null;
 
@@ -177,15 +190,32 @@ async function parseJsonResponse<T>(response: Response): Promise<T> {
   return data as T;
 }
 
+export async function getSession(): Promise<{ authenticated: boolean }> {
+  const response = await apiFetch("/api/auth/session");
+  return parseJsonResponse<{ authenticated: boolean }>(response);
+}
+
+export async function login(password: string): Promise<{ authenticated: boolean }> {
+  const response = await apiFetch("/api/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ password })
+  });
+  return parseJsonResponse<{ authenticated: boolean }>(response);
+}
+
+export async function logout(): Promise<{ authenticated: boolean }> {
+  const response = await apiFetch("/api/auth/logout", { method: "POST" });
+  return parseJsonResponse<{ authenticated: boolean }>(response);
+}
+
 export async function getProfile(): Promise<OwnerProfile> {
-  const response = await fetch(apiUrl("/api/profile"));
+  const response = await apiFetch("/api/profile");
   return parseJsonResponse<OwnerProfile>(response);
 }
 
 export async function parseCv(rawText: string): Promise<{ cv_raw_text: string; cv_structured: StructuredCv }> {
-  const response = await fetch(apiUrl("/api/profile/cv/parse"), {
+  const response = await apiFetch("/api/profile/cv/parse", {
     method: "POST",
-    headers: { "content-type": "application/json" },
     body: JSON.stringify({ rawText })
   });
 
@@ -193,9 +223,8 @@ export async function parseCv(rawText: string): Promise<{ cv_raw_text: string; c
 }
 
 export async function saveStructuredCv(cv: StructuredCv): Promise<OwnerProfile> {
-  const response = await fetch(apiUrl("/api/profile"), {
+  const response = await apiFetch("/api/profile", {
     method: "PUT",
-    headers: { "content-type": "application/json" },
     body: JSON.stringify({ cv_structured: cv })
   });
 
@@ -211,19 +240,18 @@ export async function getJobs(filters: JobFilters = {}): Promise<{ jobs: Job[] }
     }
   });
 
-  const response = await fetch(apiUrl(`/api/jobs${params.toString() ? `?${params.toString()}` : ""}`));
+  const response = await apiFetch(`/api/jobs${params.toString() ? `?${params.toString()}` : ""}`);
   return parseJsonResponse<{ jobs: Job[] }>(response);
 }
 
 export async function scrapeJobs(): Promise<ScrapeSummary> {
-  const response = await fetch(apiUrl("/api/jobs/scrape"), { method: "POST" });
+  const response = await apiFetch("/api/jobs/scrape", { method: "POST" });
   return parseJsonResponse<ScrapeSummary>(response);
 }
 
 export async function updateJobStatus(id: string, status: JobStatus): Promise<Job> {
-  const response = await fetch(apiUrl(`/api/jobs/${id}/status`), {
+  const response = await apiFetch(`/api/jobs/${id}/status`, {
     method: "PATCH",
-    headers: { "content-type": "application/json" },
     body: JSON.stringify({ status })
   });
 
@@ -235,85 +263,79 @@ export async function getApplications(filters: { status?: string; platform?: str
   Object.entries(filters).forEach(([key, value]) => {
     if (value) params.set(key, value);
   });
-  const response = await fetch(apiUrl(`/api/applications${params.toString() ? `?${params.toString()}` : ""}`));
+  const response = await apiFetch(`/api/applications${params.toString() ? `?${params.toString()}` : ""}`);
   return parseJsonResponse<{ applications: Application[] }>(response);
 }
 
 export async function getApplicationStats(): Promise<ApplicationStats> {
-  const response = await fetch(apiUrl("/api/applications/stats"));
+  const response = await apiFetch("/api/applications/stats");
   return parseJsonResponse<ApplicationStats>(response);
 }
 
 export async function createApplicationDraft(input: { job_id: string; status?: ApplicationStatus; notes?: string }): Promise<Application> {
-  const response = await fetch(apiUrl("/api/applications"), {
+  const response = await apiFetch("/api/applications", {
     method: "POST",
-    headers: { "content-type": "application/json" },
     body: JSON.stringify(input)
   });
   return parseJsonResponse<Application>(response);
 }
 
 export async function generateCoverLetter(jobId: string): Promise<{ cover_letter: string; application_id: string; warning?: string }> {
-  const response = await fetch(apiUrl("/api/applications/generate-cover-letter"), {
+  const response = await apiFetch("/api/applications/generate-cover-letter", {
     method: "POST",
-    headers: { "content-type": "application/json" },
     body: JSON.stringify({ job_id: jobId })
   });
   return parseJsonResponse<{ cover_letter: string; application_id: string; warning?: string }>(response);
 }
 
 export async function updateApplication(id: string, input: Partial<Pick<Application, "cover_letter_used" | "status" | "notes" | "follow_up_date" | "form_platform" | "cv_version_used" | "auto_applied">>): Promise<Application> {
-  const response = await fetch(apiUrl(`/api/applications/${id}`), {
+  const response = await apiFetch(`/api/applications/${id}`, {
     method: "PUT",
-    headers: { "content-type": "application/json" },
     body: JSON.stringify(input)
   });
   return parseJsonResponse<Application>(response);
 }
 
 export async function updateApplicationStatus(id: string, status: ApplicationStatus): Promise<Application> {
-  const response = await fetch(apiUrl(`/api/applications/${id}/status`), {
+  const response = await apiFetch(`/api/applications/${id}/status`, {
     method: "PATCH",
-    headers: { "content-type": "application/json" },
     body: JSON.stringify({ status })
   });
   return parseJsonResponse<Application>(response);
 }
 
 export async function markApplicationApplied(id: string): Promise<Application> {
-  const response = await fetch(apiUrl(`/api/applications/${id}/mark-applied`), { method: "POST" });
+  const response = await apiFetch(`/api/applications/${id}/mark-applied`, { method: "POST" });
   return parseJsonResponse<Application>(response);
 }
 
 export async function getInterviewSessions(): Promise<{ sessions: InterviewSessionSummary[] }> {
-  const response = await fetch(apiUrl("/api/interview/sessions"));
+  const response = await apiFetch("/api/interview/sessions");
   return parseJsonResponse<{ sessions: InterviewSessionSummary[] }>(response);
 }
 
 export async function getInterviewSession(id: string): Promise<InterviewSession> {
-  const response = await fetch(apiUrl(`/api/interview/sessions/${id}`));
+  const response = await apiFetch(`/api/interview/sessions/${id}`);
   return parseJsonResponse<InterviewSession>(response);
 }
 
 export async function startInterviewSession(input: { mode: InterviewMode; language: InterviewLanguage }): Promise<{ session: InterviewSession; assistantMessage: InterviewMessage }> {
-  const response = await fetch(apiUrl("/api/interview/sessions"), {
+  const response = await apiFetch("/api/interview/sessions", {
     method: "POST",
-    headers: { "content-type": "application/json" },
     body: JSON.stringify(input)
   });
   return parseJsonResponse<{ session: InterviewSession; assistantMessage: InterviewMessage }>(response);
 }
 
 export async function sendInterviewMessage(id: string, content: string): Promise<{ session: InterviewSession; assistantMessage: InterviewMessage }> {
-  const response = await fetch(apiUrl(`/api/interview/sessions/${id}/message`), {
+  const response = await apiFetch(`/api/interview/sessions/${id}/message`, {
     method: "POST",
-    headers: { "content-type": "application/json" },
     body: JSON.stringify({ content })
   });
   return parseJsonResponse<{ session: InterviewSession; assistantMessage: InterviewMessage }>(response);
 }
 
 export async function endInterviewSession(id: string): Promise<{ session: InterviewSession }> {
-  const response = await fetch(apiUrl(`/api/interview/sessions/${id}/end`), { method: "POST" });
+  const response = await apiFetch(`/api/interview/sessions/${id}/end`, { method: "POST" });
   return parseJsonResponse<{ session: InterviewSession }>(response);
 }
