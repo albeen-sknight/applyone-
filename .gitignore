@@ -4,3 +4,4 @@ dist
 .wrangler
 *.tsbuildinfo
 .codex-*.log
+playwright/.runs/

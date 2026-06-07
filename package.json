@@ -11,9 +11,17 @@
     "dev:frontend": "npm run dev --workspace frontend",
     "dev:worker": "npm run dev --workspace workers",
     "build": "npm run build --workspace frontend && npm run build --workspace workers",
-    "typecheck": "npm run typecheck --workspace frontend && npm run typecheck --workspace workers"
+    "typecheck": "npm run typecheck --workspace frontend && npm run typecheck --workspace workers && npm run typecheck:playwright",
+    "typecheck:playwright": "tsc -p tsconfig.playwright.json --pretty false",
+    "apply:infojobs": "tsx playwright/infojobs-apply.ts",
+    "apply:linkedin": "tsx playwright/linkedin-apply.ts",
+    "apply:generic": "tsx playwright/generic-ats.ts"
   },
   "engines": {
     "node": ">=22"
+  },
+  "devDependencies": {
+    "playwright": "^1.60.0",
+    "tsx": "^4.22.4"
   }
 }

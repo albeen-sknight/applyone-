@@ -1,250 +1,202 @@
 # ApplyOne
 
-ApplyOne is a private job application assistant for one owner. Phase 1 set up the foundation. Phase 2 added browser PDF CV text extraction, Gemini-powered CV parsing in the Worker, and editable structured profile data stored in D1. Phase 3 added a local-first Job Feed with respectful public-page scraping, deterministic match scoring, and review/skip workflow. Phase 4A adds safe application drafts, Gemini cover letters, manual applied tracking, notes, follow-up dates, and dashboard statistics.
+ApplyOne is a private, single-user job application workspace. Phase 1 added the local Worker, D1 schema, and dashboard shell. Phase 2 added Gemini-powered CV parsing and profile editing. Phase 3 added the job feed, local search, and match scoring. Phase 4A added application drafts and cover letter generation. Phase 4B adds local Playwright-assisted application scripts that stop before submission.
 
 ## Requirements
 
-- Node.js 22+
-- npm 10+
-- Git
-- Wrangler 4+
-- Cloudflare account with D1 database `applyone-db`
+- Node.js 20+
+- npm
+- Cloudflare Wrangler
+- Gemini API key for CV parsing and cover letter generation
 
-## Environment Values
+## Environment
 
-Copy the example file when you need local environment values:
+Copy `.env.example` to `.env` and fill only local values:
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-Do not commit `.env`. Add the real Gemini key only to `.env` or to Cloudflare Worker secrets.
+Important values:
 
-Phase 2 local values:
-
-```powershell
-AI_PROVIDER=gemini
-GEMINI_API_KEY=your-local-key
-GEMINI_MODEL=gemini-2.5-flash
+```env
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-2.0-flash
+PLAYWRIGHT_HEADLESS=true
+APPLYONE_LOCAL_API=http://127.0.0.1:8787
+APPLYONE_CV_PATH=
 ```
 
-Required later-phase values:
+Do not commit `.env`, API keys, CV files, screenshots, or Playwright run output.
 
-- `LINKEDIN_CLIENT_ID`
-- `LINKEDIN_CLIENT_SECRET`
-- `LINKEDIN_REDIRECT_URI`
-- `CLOUDFLARE_ACCOUNT_ID`
-- `CLOUDFLARE_D1_DATABASE_ID`
-- `PLAYWRIGHT_HEADLESS`
-
-## Install Dependencies
-
-From `C:\Users\PC\OneDrive\Documentos\GitHub\applyone-`:
+## Install
 
 ```powershell
 npm install
+npx playwright install chromium
 ```
 
-## Run Frontend Locally
+## Local Development
 
-```powershell
-npm run dev:frontend
-```
-
-The frontend runs at `http://localhost:5173`.
-
-## Run Worker Locally
+Run the Worker API:
 
 ```powershell
 npm run dev:worker
 ```
 
-The Worker runs at `http://localhost:8787`.
+Run the frontend:
 
-Useful endpoints:
+```powershell
+npm run dev:frontend
+```
 
-- `GET /health`
+Open the app:
+
+```text
+http://127.0.0.1:5173
+```
+
+Useful pages:
+
+- `/` dashboard
+- `/perfil` profile and CV upload
+- `/ofertas` job feed and matching
+- `/aplicaciones` application drafts and cover letters
+- `/configuracion` local settings shell
+
+## Local D1
+
+Apply the schema when creating or resetting the local database:
+
+```powershell
+npx wrangler d1 execute applyone-db --local --file .\workers\src\db\schema.sql
+```
+
+The Worker API uses local D1 through Wrangler. The Playwright scripts read data through the local Worker API only; they do not read D1 directly.
+
+## CV Parsing
+
+1. Start the Worker and frontend.
+2. Go to `http://127.0.0.1:5173/perfil`.
+3. Upload a PDF or DOCX CV.
+4. Review the parsed profile JSON and extracted text.
+5. Edit the profile fields and save.
+
+## Job Feed
+
+1. Start the Worker and frontend.
+2. Go to `http://127.0.0.1:5173/ofertas`.
+3. Add jobs manually or import from CSV.
+4. Use platform, status, text search, remote-only, and minimum match filters.
+5. Open a job card to review the match reasons and assisted application command.
+
+CSV imports accept common columns such as `title`, `company`, `location`, `url`, `platform`, `description`, `salary`, and `remote`.
+
+## Application Drafts
+
+1. Start the Worker and frontend.
+2. Go to `http://127.0.0.1:5173/aplicaciones`.
+3. Create a draft from an existing job.
+4. Generate a cover letter with Gemini.
+5. Edit and save the cover letter before using it anywhere.
+
+The app keeps drafts local and does not submit applications.
+
+## Assisted Applications
+
+Phase 4B scripts open application pages locally with Playwright, fill obvious fields from the local profile, save screenshots, and stop in review mode. They never click the final submit button. The optional `--confirm-submit` flag is accepted for future compatibility, but the current scripts still stop before submission.
+
+Safety behavior:
+
+- Dry-run/review mode is the default.
+- No real applications are submitted.
+- CAPTCHA and anti-bot checks are not bypassed.
+- Credentials are not stored.
+- LinkedIn login is not automated.
+- Each run is saved under `playwright/.runs/<timestamp>-<platform>/`.
+- If `APPLYONE_CV_PATH` is empty, the scripts log `No APPLYONE_CV_PATH configured; skipping CV upload.`
+
+Run the local Worker first when using `--job-id` or `--application-id`:
+
+```powershell
+npm run dev:worker
+```
+
+Generic ATS from a saved job:
+
+```powershell
+npm run apply:generic -- --job-id <job-id>
+```
+
+Generic ATS from a direct URL:
+
+```powershell
+npm run apply:generic -- --url "https://example.com/apply"
+```
+
+InfoJobs from a saved job:
+
+```powershell
+npm run apply:infojobs -- --job-id <job-id>
+```
+
+LinkedIn from a saved job:
+
+```powershell
+npm run apply:linkedin -- --job-id <job-id>
+```
+
+Local harmless mock page:
+
+```powershell
+$mock = (Resolve-Path 'playwright\fixtures\mock-ats.html').Path.Replace('\','/')
+$env:APPLYONE_CV_PATH=''
+npm run apply:generic -- --url "file:///$mock"
+```
+
+To watch the browser while testing:
+
+```powershell
+$env:PLAYWRIGHT_HEADLESS='false'
+```
+
+## API
+
+Worker endpoints include:
+
+- `GET /api/health`
+- `POST /api/profile/upload-cv`
 - `GET /api/profile`
-- `GET /api/profile/cv`
-- `POST /api/profile/cv/parse`
 - `PUT /api/profile`
 - `GET /api/jobs`
-- `POST /api/jobs/scrape`
-- `PATCH /api/jobs/:id/status`
-- `POST /api/jobs/import`
-- `GET /api/applications`
-- `GET /api/applications/stats`
+- `POST /api/jobs`
+- `POST /api/jobs/import-csv`
+- `GET /api/jobs/:id`
+- `PATCH /api/jobs/:id`
+- `DELETE /api/jobs/:id`
 - `POST /api/applications`
-- `POST /api/applications/generate-cover-letter`
-- `PUT /api/applications/:id`
-- `PATCH /api/applications/:id/status`
-- `POST /api/applications/:id/mark-applied`
+- `GET /api/applications`
+- `GET /api/applications/:id`
+- `PATCH /api/applications/:id`
+- `DELETE /api/applications/:id`
+- `POST /api/applications/:id/generate-cover-letter`
 
-## Apply D1 Schema
-
-Local D1:
-
-```powershell
-npx wrangler d1 execute applyone-db --local --file ./workers/src/db/schema.sql
-```
-
-Remote D1:
-
-```powershell
-npx wrangler d1 execute applyone-db --remote --file ./workers/src/db/schema.sql
-```
-
-## Test CV Upload Locally
-
-1. Start the Worker:
-
-```powershell
-npm run dev:worker
-```
-
-2. Start the frontend:
-
-```powershell
-npm run dev:frontend
-```
-
-3. Open `http://127.0.0.1:5173/perfil`.
-4. Confirm the default profile loads.
-5. Use `Subir CV` to select a PDF.
-6. Click `Extraer y analizar CV`.
-7. Confirm `Texto extraído` is populated.
-8. Confirm `Perfil estructurado` shows parsed Gemini JSON.
-9. Edit a field and click `Guardar cambios`.
-10. Check `GET http://127.0.0.1:8787/api/profile` includes `cv_raw_text` and `cv_structured`.
-
-If `GEMINI_API_KEY` is missing, the Worker returns a clear error and the frontend shows it in the upload section.
-
-## Test Job Feed Locally
-
-1. Start the Worker:
-
-```powershell
-npm run dev:worker
-```
-
-2. Start the frontend:
-
-```powershell
-npm run dev:frontend
-```
-
-3. Open `http://127.0.0.1:5173/empleos`.
-4. Click `Buscar nuevas ofertas`.
-5. Confirm the summary shows inserted, updated, duplicate, and platform error counts.
-6. Confirm jobs with `match_score > 0.5` appear by default.
-7. Use `Omitir` to mark a job as skipped.
-8. Confirm skipped jobs disappear from the default list.
-
-PowerShell API checks:
-
-```powershell
-Invoke-RestMethod -Uri http://127.0.0.1:8787/api/jobs
-Invoke-RestMethod -Uri http://127.0.0.1:8787/api/jobs/scrape -Method Post
-```
-
-Manual import fallback:
-
-```powershell
-$body = @{
-  title = "Técnico de soporte IT junior"
-  company = "Empresa manual"
-  location = "Madrid híbrido"
-  platform = "manual"
-  url = "https://example.com/jobs/manual-soporte-it"
-  description_raw = "Helpdesk, Microsoft 365, Windows, ticket handling, soporte usuarios, junior"
-} | ConvertTo-Json
-
-Invoke-RestMethod -Uri http://127.0.0.1:8787/api/jobs/import -Method Post -ContentType "application/json" -Body $body
-```
-
-Scraper limitations:
-
-- Phase 3 uses public pages and normal `fetch` only.
-- No login, captcha bypass, private APIs, Playwright, or auto-apply.
-- LinkedIn, Indeed, InfoJobs, or Tecnoempleo may block or change markup; the Worker reports those platform errors and continues.
-- Manual import is available when a platform requires manual checking.
-
-## Test Application Drafts and Cover Letters Locally
-
-Phase 4A does not automate browser submissions. It only creates internal drafts, cover letters, tracking records, and manual status workflows. Playwright-assisted form filling is reserved for Phase 4B.
-
-1. Start the Worker:
-
-```powershell
-npm run dev:worker
-```
-
-2. Start the frontend:
-
-```powershell
-npm run dev:frontend
-```
-
-3. Open `http://127.0.0.1:5173/empleos`.
-4. Pick a saved job and click `Generar carta`.
-5. Review the generated `Carta de presentación`.
-6. Edit the text if needed.
-7. Click `Guardar borrador` or `Marcar como lista para aplicar`.
-8. Use `Marcar como aplicada` only after applying manually outside ApplyOne.
-9. Open the Dashboard at `http://127.0.0.1:5173/`.
-10. Confirm the application appears in the table and the stats update.
-
-PowerShell API checks:
-
-```powershell
-$jobs = Invoke-RestMethod -Uri http://127.0.0.1:8787/api/jobs
-$jobId = $jobs.jobs[0].id
-
-Invoke-RestMethod -Uri http://127.0.0.1:8787/api/applications/generate-cover-letter `
-  -Method Post `
-  -ContentType "application/json" `
-  -Body (@{ job_id = $jobId } | ConvertTo-Json)
-
-Invoke-RestMethod -Uri http://127.0.0.1:8787/api/applications
-Invoke-RestMethod -Uri http://127.0.0.1:8787/api/applications/stats
-```
-
-Draft workflow:
-
-- `draft`: saved but not ready.
-- `ready_to_apply`: reviewed and ready for manual submission.
-- `manual_required`: needs manual site-specific action.
-- `applied`: user confirms it was submitted manually.
-- Later follow-up states: `viewed`, `interview`, `offer`, `rejected`, `no_reply`.
-
-When an application is marked as applied, ApplyOne sets `auto_applied` to `false` and updates the linked job status to `applied`.
-
-## Build and Type Check
+## Validation
 
 ```powershell
 npm run typecheck
 npm run build
 ```
 
+For a full local smoke test:
+
+```powershell
+npm run dev:worker
+npm run dev:frontend
+```
+
+Then test the app pages and run the mock Playwright command above. Confirm that the script stops before submission and writes screenshots plus `summary.json` under `playwright/.runs/`.
+
 ## Future Deployment Notes
 
-The public Pages project exists at `https://applyone.pages.dev`.
-
-Frontend Pages project:
-
-```powershell
-npx wrangler pages project create applyone
-npm run build --workspace frontend
-npx wrangler pages deploy ./frontend/dist --project-name applyone --branch main
-```
-
-Worker deployment:
-
-```powershell
-npx wrangler secret put GEMINI_API_KEY --config ./wrangler.toml
-npx wrangler deploy
-```
-
-Production API wiring and deployment automation are not part of Phase 4A.
-
-Future phases will add LinkedIn OAuth, Playwright automation, interview preparation, and GitHub Actions. Those features are intentionally not implemented in Phase 4A.
+ApplyOne is intentionally local-first for now. Before deploying beyond local use, add authentication, secret management, production database migrations, rate limits, observability, and a clear privacy model for CV and application data.

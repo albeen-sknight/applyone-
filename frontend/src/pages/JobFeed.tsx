@@ -69,6 +69,8 @@ function JobCard({
 }) {
   const description = job.description_parsed || job.description_raw || "Sin descripción disponible.";
   const busy = busyJobId === job.id;
+  const suggestedScript = job.platform === "infojobs" ? "apply:infojobs" : job.platform === "linkedin" ? "apply:linkedin" : "apply:generic";
+  const command = `npm run ${suggestedScript} -- --job-id ${job.id}`;
 
   return (
     <article className="rounded-lg border border-black/10 bg-white p-5 shadow-sm">
@@ -112,6 +114,13 @@ function JobCard({
         <details className="w-full rounded-md border border-black/10 bg-black/[0.02] p-3">
           <summary className="cursor-pointer text-sm font-semibold">Ver detalles</summary>
           <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-olive">{description}</p>
+        </details>
+        <details className="w-full rounded-md border border-copper/20 bg-yellow-50 p-3">
+          <summary className="cursor-pointer text-sm font-semibold text-ink">Aplicación asistida</summary>
+          <p className="mt-3 text-sm leading-6 text-olive">
+            La automatización asistida se ejecuta localmente con Playwright. No envía solicitudes sin confirmación.
+          </p>
+          <code className="mt-3 block overflow-x-auto rounded-md bg-white p-3 text-xs text-ink">{command}</code>
         </details>
       </div>
     </article>
