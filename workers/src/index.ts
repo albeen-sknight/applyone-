@@ -14,6 +14,8 @@ const jsonHeaders = {
   "content-type": "application/json; charset=utf-8"
 };
 
+const defaultAllowedOrigins = ["https://applyone.pages.dev", "http://127.0.0.1:5173", "http://localhost:5173"];
+
 export function json(data: unknown, init: ResponseInit = {}) {
   return new Response(JSON.stringify(data, null, 2), {
     ...init,
@@ -29,8 +31,12 @@ function notFound() {
 }
 
 function allowedOrigins(env: ApplyOneEnv) {
-  const configured = env.ALLOWED_ORIGINS?.split(",").map((origin) => origin.trim()).filter(Boolean) || [];
-  return configured.length > 0 ? configured : ["http://127.0.0.1:5173", "http://localhost:5173"];
+  const configured =
+    env.ALLOWED_ORIGINS?.split(",")
+      .map((origin) => origin.trim().replace(/^["']|["']$/g, "").replace(/\/$/, ""))
+      .filter(Boolean) || [];
+
+  return Array.from(new Set([...defaultAllowedOrigins, ...configured]));
 }
 
 function corsHeaders(request: Request, env: ApplyOneEnv) {
@@ -93,24 +99,28 @@ export default {
       return withCors(json({ error: "Authentication required." }, { status: 401 }), request, env);
     }
 
-    const handler = routes[url.pathname];
+    try {
+      const handler = routes[url.pathname];
 
-    if (!handler && url.pathname.startsWith("/api/jobs")) {
-      return withCors(await handleJobs(request, env), request, env);
+      if (!handler && url.pathname.startsWith("/api/jobs")) {
+        return withCors(await handleJobs(request, env), request, env);
+      }
+
+      if (!handler && url.pathname.startsWith("/api/applications")) {
+        return withCors(await handleApplications(request, env), request, env);
+      }
+
+      if (!handler && url.pathname.startsWith("/api/interview")) {
+        return withCors(await handleInterview(request, env), request, env);
+      }
+
+      if (!handler) {
+        return withCors(notFound(), request, env);
+      }
+
+      return withCors(await handler(request, env), request, env);
+    } catch {
+      return withCors(json({ error: "Internal server error" }, { status: 500 }), request, env);
     }
-
-    if (!handler && url.pathname.startsWith("/api/applications")) {
-      return withCors(await handleApplications(request, env), request, env);
-    }
-
-    if (!handler && url.pathname.startsWith("/api/interview")) {
-      return withCors(await handleInterview(request, env), request, env);
-    }
-
-    if (!handler) {
-      return withCors(notFound(), request, env);
-    }
-
-    return withCors(await handler(request, env), request, env);
   }
 };
