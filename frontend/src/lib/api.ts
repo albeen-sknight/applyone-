@@ -72,6 +72,41 @@ export type Job = {
   status: JobStatus;
 };
 
+export type ApplicationStatus = "draft" | "ready_to_apply" | "manual_required" | "applied" | "viewed" | "interview" | "offer" | "rejected" | "no_reply";
+
+export type Application = {
+  id: string;
+  job_id: string;
+  applied_at: string | null;
+  cover_letter_used: string;
+  cv_version_used: string;
+  form_platform: string;
+  status: ApplicationStatus;
+  notes: string;
+  follow_up_date: string;
+  auto_applied: boolean;
+  created_at: string;
+  updated_at: string;
+  job: {
+    id: string;
+    title: string;
+    company: string;
+    platform: string;
+    url: string;
+    location: string;
+    description_raw: string;
+    description_parsed: string;
+    match_score: number;
+  };
+};
+
+export type ApplicationStats = {
+  totalApplications: number;
+  responseRate: number;
+  interviewsScheduled: number;
+  thisWeekApplications: number;
+};
+
 export type ScrapeSummary = {
   platforms: Array<{ platform: JobPlatform; found: number; status: "ok" | "error"; error?: string }>;
   inserted: number;
@@ -160,4 +195,59 @@ export async function updateJobStatus(id: string, status: JobStatus): Promise<Jo
   });
 
   return parseJsonResponse<Job>(response);
+}
+
+export async function getApplications(filters: { status?: string; platform?: string; q?: string } = {}): Promise<{ applications: Application[] }> {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value) params.set(key, value);
+  });
+  const response = await fetch(`/api/applications${params.toString() ? `?${params.toString()}` : ""}`);
+  return parseJsonResponse<{ applications: Application[] }>(response);
+}
+
+export async function getApplicationStats(): Promise<ApplicationStats> {
+  const response = await fetch("/api/applications/stats");
+  return parseJsonResponse<ApplicationStats>(response);
+}
+
+export async function createApplicationDraft(input: { job_id: string; status?: ApplicationStatus; notes?: string }): Promise<Application> {
+  const response = await fetch("/api/applications", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(input)
+  });
+  return parseJsonResponse<Application>(response);
+}
+
+export async function generateCoverLetter(jobId: string): Promise<{ cover_letter: string; application_id: string; warning?: string }> {
+  const response = await fetch("/api/applications/generate-cover-letter", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ job_id: jobId })
+  });
+  return parseJsonResponse<{ cover_letter: string; application_id: string; warning?: string }>(response);
+}
+
+export async function updateApplication(id: string, input: Partial<Pick<Application, "cover_letter_used" | "status" | "notes" | "follow_up_date" | "form_platform" | "cv_version_used" | "auto_applied">>): Promise<Application> {
+  const response = await fetch(`/api/applications/${id}`, {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(input)
+  });
+  return parseJsonResponse<Application>(response);
+}
+
+export async function updateApplicationStatus(id: string, status: ApplicationStatus): Promise<Application> {
+  const response = await fetch(`/api/applications/${id}/status`, {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ status })
+  });
+  return parseJsonResponse<Application>(response);
+}
+
+export async function markApplicationApplied(id: string): Promise<Application> {
+  const response = await fetch(`/api/applications/${id}/mark-applied`, { method: "POST" });
+  return parseJsonResponse<Application>(response);
 }

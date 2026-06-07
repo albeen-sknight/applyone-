@@ -1,4 +1,5 @@
 import { handleApply } from "./routes/apply";
+import { handleApplications } from "./routes/applications";
 import { handleAuth } from "./routes/auth";
 import { handleCoverLetter } from "./routes/coverletter";
 import { handleInterview } from "./routes/interview";
@@ -11,7 +12,7 @@ type RouteHandler = (request: Request, env: ApplyOneEnv) => Response | Promise<R
 const jsonHeaders = {
   "content-type": "application/json; charset=utf-8",
   "access-control-allow-origin": "*",
-  "access-control-allow-methods": "GET,POST,PUT,OPTIONS",
+  "access-control-allow-methods": "GET,POST,PUT,PATCH,OPTIONS",
   "access-control-allow-headers": "content-type"
 };
 
@@ -56,6 +57,10 @@ export default {
 
     if (!handler && url.pathname.startsWith("/api/jobs")) {
       return handleJobs(request, env);
+    }
+
+    if (!handler && url.pathname.startsWith("/api/applications")) {
+      return handleApplications(request, env);
     }
 
     if (!handler) {

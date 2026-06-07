@@ -1,6 +1,6 @@
 # ApplyOne
 
-ApplyOne is a private job application assistant for one owner. Phase 1 set up the foundation. Phase 2 added browser PDF CV text extraction, Gemini-powered CV parsing in the Worker, and editable structured profile data stored in D1. Phase 3 adds a local-first Job Feed with respectful public-page scraping, deterministic match scoring, and review/skip workflow.
+ApplyOne is a private job application assistant for one owner. Phase 1 set up the foundation. Phase 2 added browser PDF CV text extraction, Gemini-powered CV parsing in the Worker, and editable structured profile data stored in D1. Phase 3 added a local-first Job Feed with respectful public-page scraping, deterministic match scoring, and review/skip workflow. Phase 4A adds safe application drafts, Gemini cover letters, manual applied tracking, notes, follow-up dates, and dashboard statistics.
 
 ## Requirements
 
@@ -72,6 +72,13 @@ Useful endpoints:
 - `POST /api/jobs/scrape`
 - `PATCH /api/jobs/:id/status`
 - `POST /api/jobs/import`
+- `GET /api/applications`
+- `GET /api/applications/stats`
+- `POST /api/applications`
+- `POST /api/applications/generate-cover-letter`
+- `PUT /api/applications/:id`
+- `PATCH /api/applications/:id/status`
+- `POST /api/applications/:id/mark-applied`
 
 ## Apply D1 Schema
 
@@ -162,6 +169,56 @@ Scraper limitations:
 - LinkedIn, Indeed, InfoJobs, or Tecnoempleo may block or change markup; the Worker reports those platform errors and continues.
 - Manual import is available when a platform requires manual checking.
 
+## Test Application Drafts and Cover Letters Locally
+
+Phase 4A does not automate browser submissions. It only creates internal drafts, cover letters, tracking records, and manual status workflows. Playwright-assisted form filling is reserved for Phase 4B.
+
+1. Start the Worker:
+
+```powershell
+npm run dev:worker
+```
+
+2. Start the frontend:
+
+```powershell
+npm run dev:frontend
+```
+
+3. Open `http://127.0.0.1:5173/empleos`.
+4. Pick a saved job and click `Generar carta`.
+5. Review the generated `Carta de presentación`.
+6. Edit the text if needed.
+7. Click `Guardar borrador` or `Marcar como lista para aplicar`.
+8. Use `Marcar como aplicada` only after applying manually outside ApplyOne.
+9. Open the Dashboard at `http://127.0.0.1:5173/`.
+10. Confirm the application appears in the table and the stats update.
+
+PowerShell API checks:
+
+```powershell
+$jobs = Invoke-RestMethod -Uri http://127.0.0.1:8787/api/jobs
+$jobId = $jobs.jobs[0].id
+
+Invoke-RestMethod -Uri http://127.0.0.1:8787/api/applications/generate-cover-letter `
+  -Method Post `
+  -ContentType "application/json" `
+  -Body (@{ job_id = $jobId } | ConvertTo-Json)
+
+Invoke-RestMethod -Uri http://127.0.0.1:8787/api/applications
+Invoke-RestMethod -Uri http://127.0.0.1:8787/api/applications/stats
+```
+
+Draft workflow:
+
+- `draft`: saved but not ready.
+- `ready_to_apply`: reviewed and ready for manual submission.
+- `manual_required`: needs manual site-specific action.
+- `applied`: user confirms it was submitted manually.
+- Later follow-up states: `viewed`, `interview`, `offer`, `rejected`, `no_reply`.
+
+When an application is marked as applied, ApplyOne sets `auto_applied` to `false` and updates the linked job status to `applied`.
+
 ## Build and Type Check
 
 ```powershell
@@ -188,6 +245,6 @@ npx wrangler secret put GEMINI_API_KEY --config ./wrangler.toml
 npx wrangler deploy
 ```
 
-Production API wiring and deployment automation are not part of Phase 3.
+Production API wiring and deployment automation are not part of Phase 4A.
 
-Future phases will add LinkedIn OAuth, Playwright automation, cover letter generation, interview preparation, and GitHub Actions. Those features are intentionally not implemented in Phase 3.
+Future phases will add LinkedIn OAuth, Playwright automation, interview preparation, and GitHub Actions. Those features are intentionally not implemented in Phase 4A.

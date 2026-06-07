@@ -41,10 +41,15 @@ CREATE TABLE IF NOT EXISTS jobs (
 CREATE TABLE IF NOT EXISTS applications (
   id TEXT PRIMARY KEY,
   job_id TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'draft',
   applied_at TEXT,
   cover_letter TEXT,
+  cover_letter_used TEXT,
+  cv_version_used TEXT,
+  form_platform TEXT,
+  status TEXT NOT NULL DEFAULT 'draft',
   notes TEXT,
+  follow_up_date TEXT,
+  auto_applied INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE
