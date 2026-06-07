@@ -107,6 +107,31 @@ export type ApplicationStats = {
   thisWeekApplications: number;
 };
 
+export type InterviewMode = "hr" | "technical";
+export type InterviewLanguage = "es" | "en";
+
+export type InterviewMessage = {
+  role: "assistant" | "user" | "system";
+  content: string;
+  feedback?: string;
+};
+
+export type InterviewSessionSummary = {
+  id: string;
+  mode: InterviewMode;
+  language: InterviewLanguage;
+  started_at: string;
+  ended_at: string | null;
+  overall_score: number | null;
+  overall_feedback: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type InterviewSession = InterviewSessionSummary & {
+  transcript: InterviewMessage[];
+};
+
 export type ScrapeSummary = {
   platforms: Array<{ platform: JobPlatform; found: number; status: "ok" | "error"; error?: string }>;
   inserted: number;
@@ -250,4 +275,37 @@ export async function updateApplicationStatus(id: string, status: ApplicationSta
 export async function markApplicationApplied(id: string): Promise<Application> {
   const response = await fetch(`/api/applications/${id}/mark-applied`, { method: "POST" });
   return parseJsonResponse<Application>(response);
+}
+
+export async function getInterviewSessions(): Promise<{ sessions: InterviewSessionSummary[] }> {
+  const response = await fetch("/api/interview/sessions");
+  return parseJsonResponse<{ sessions: InterviewSessionSummary[] }>(response);
+}
+
+export async function getInterviewSession(id: string): Promise<InterviewSession> {
+  const response = await fetch(`/api/interview/sessions/${id}`);
+  return parseJsonResponse<InterviewSession>(response);
+}
+
+export async function startInterviewSession(input: { mode: InterviewMode; language: InterviewLanguage }): Promise<{ session: InterviewSession; assistantMessage: InterviewMessage }> {
+  const response = await fetch("/api/interview/sessions", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(input)
+  });
+  return parseJsonResponse<{ session: InterviewSession; assistantMessage: InterviewMessage }>(response);
+}
+
+export async function sendInterviewMessage(id: string, content: string): Promise<{ session: InterviewSession; assistantMessage: InterviewMessage }> {
+  const response = await fetch(`/api/interview/sessions/${id}/message`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ content })
+  });
+  return parseJsonResponse<{ session: InterviewSession; assistantMessage: InterviewMessage }>(response);
+}
+
+export async function endInterviewSession(id: string): Promise<{ session: InterviewSession }> {
+  const response = await fetch(`/api/interview/sessions/${id}/end`, { method: "POST" });
+  return parseJsonResponse<{ session: InterviewSession }>(response);
 }

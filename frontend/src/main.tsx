@@ -73,6 +73,7 @@ function App() {
               <Route path="/" element={<Dashboard />} />
               <Route path="/perfil" element={<Profile />} />
               <Route path="/empleos" element={<JobFeed />} />
+              <Route path="/entrevista" element={<InterviewPrep />} />
               <Route path="/entrevistas" element={<InterviewPrep />} />
               <Route path="/ajustes" element={<SettingsPage />} />
             </Routes>
