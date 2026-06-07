@@ -3,7 +3,7 @@ import { handleAuth } from "./routes/auth";
 import { handleCoverLetter } from "./routes/coverletter";
 import { handleInterview } from "./routes/interview";
 import { handleJobs } from "./routes/jobs";
-import { handleProfile } from "./routes/profile";
+import { handleProfile, handleProfileCv, handleProfileCvParse } from "./routes/profile";
 import type { ApplyOneEnv } from "./env";
 
 type RouteHandler = (request: Request, env: ApplyOneEnv) => Response | Promise<Response>;
@@ -11,7 +11,7 @@ type RouteHandler = (request: Request, env: ApplyOneEnv) => Response | Promise<R
 const jsonHeaders = {
   "content-type": "application/json; charset=utf-8",
   "access-control-allow-origin": "*",
-  "access-control-allow-methods": "GET,POST,OPTIONS",
+  "access-control-allow-methods": "GET,POST,PUT,OPTIONS",
   "access-control-allow-headers": "content-type"
 };
 
@@ -31,6 +31,8 @@ function notFound() {
 
 const routes: Record<string, RouteHandler> = {
   "/api/profile": handleProfile,
+  "/api/profile/cv": handleProfileCv,
+  "/api/profile/cv/parse": handleProfileCvParse,
   "/api/auth": handleAuth,
   "/api/jobs": handleJobs,
   "/api/apply": handleApply,

@@ -1,3 +1,3 @@
 export const profileQueries = {
-  getDefaultProfile: "SELECT * FROM profile WHERE id = ?"
+  getOwnerProfile: "SELECT * FROM profile WHERE id = ?"
 };

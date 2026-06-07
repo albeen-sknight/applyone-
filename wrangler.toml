@@ -3,6 +3,13 @@ main = "workers/src/index.ts"
 compatibility_date = "2026-06-07"
 compatibility_flags = ["nodejs_compat"]
 
+[vars]
+AI_PROVIDER = "gemini"
+GEMINI_MODEL = "gemini-2.5-flash"
+
+[secrets]
+required = ["GEMINI_API_KEY"]
+
 [observability]
 enabled = true
 head_sampling_rate = 1

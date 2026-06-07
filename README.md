@@ -1,6 +1,6 @@
 # ApplyOne
 
-ApplyOne is a private job application assistant for one owner. Phase 1 only sets up the foundation: a React frontend, a Cloudflare Worker API, D1 schema, and placeholders for future features.
+ApplyOne is a private job application assistant for one owner. Phase 1 set up the foundation. Phase 2 adds browser PDF CV text extraction, Gemini-powered CV parsing in the Worker, and editable structured profile data stored in D1.
 
 ## Requirements
 
@@ -18,11 +18,18 @@ Copy the example file when you need local environment values:
 Copy-Item .env.example .env
 ```
 
-Do not commit `.env`. Phase 1 does not use real API secrets yet.
+Do not commit `.env`. Add the real Gemini key only to `.env` or to Cloudflare Worker secrets.
+
+Phase 2 local values:
+
+```powershell
+AI_PROVIDER=gemini
+GEMINI_API_KEY=your-local-key
+GEMINI_MODEL=gemini-2.5-flash
+```
 
 Required later-phase values:
 
-- `ANTHROPIC_API_KEY`
 - `LINKEDIN_CLIENT_ID`
 - `LINKEDIN_CLIENT_SECRET`
 - `LINKEDIN_REDIRECT_URI`
@@ -58,6 +65,9 @@ Useful endpoints:
 
 - `GET /health`
 - `GET /api/profile`
+- `GET /api/profile/cv`
+- `POST /api/profile/cv/parse`
+- `PUT /api/profile`
 
 ## Apply D1 Schema
 
@@ -72,6 +82,31 @@ Remote D1:
 ```powershell
 npx wrangler d1 execute applyone-db --remote --file ./workers/src/db/schema.sql
 ```
+
+## Test CV Upload Locally
+
+1. Start the Worker:
+
+```powershell
+npm run dev:worker
+```
+
+2. Start the frontend:
+
+```powershell
+npm run dev:frontend
+```
+
+3. Open `http://127.0.0.1:5173/perfil`.
+4. Confirm the default profile loads.
+5. Use `Subir CV` to select a PDF.
+6. Click `Extraer y analizar CV`.
+7. Confirm `Texto extraído` is populated.
+8. Confirm `Perfil estructurado` shows parsed Gemini JSON.
+9. Edit a field and click `Guardar cambios`.
+10. Check `GET http://127.0.0.1:8787/api/profile` includes `cv_raw_text` and `cv_structured`.
+
+If `GEMINI_API_KEY` is missing, the Worker returns a clear error and the frontend shows it in the upload section.
 
 ## Build and Type Check
 
@@ -93,7 +128,8 @@ npx wrangler pages deploy ./frontend/dist --project-name applyone --branch main
 Worker deployment:
 
 ```powershell
+npx wrangler secret put GEMINI_API_KEY --config ./wrangler.toml
 npx wrangler deploy
 ```
 
-Future phases will add LinkedIn OAuth, Claude-backed generation, scraping, Playwright automation, CV parsing, interview preparation, and GitHub Actions. Those features are intentionally not implemented in Phase 1.
+Future phases will add LinkedIn OAuth, scraping, Playwright automation, cover letter generation, interview preparation, and GitHub Actions. Those features are intentionally not implemented in Phase 2.
