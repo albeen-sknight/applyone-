@@ -54,6 +54,10 @@ export default {
 
     const handler = routes[url.pathname];
 
+    if (!handler && url.pathname.startsWith("/api/jobs")) {
+      return handleJobs(request, env);
+    }
+
     if (!handler) {
       return notFound();
     }

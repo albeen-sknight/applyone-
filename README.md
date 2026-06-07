@@ -1,6 +1,6 @@
 # ApplyOne
 
-ApplyOne is a private job application assistant for one owner. Phase 1 set up the foundation. Phase 2 adds browser PDF CV text extraction, Gemini-powered CV parsing in the Worker, and editable structured profile data stored in D1.
+ApplyOne is a private job application assistant for one owner. Phase 1 set up the foundation. Phase 2 added browser PDF CV text extraction, Gemini-powered CV parsing in the Worker, and editable structured profile data stored in D1. Phase 3 adds a local-first Job Feed with respectful public-page scraping, deterministic match scoring, and review/skip workflow.
 
 ## Requirements
 
@@ -68,6 +68,10 @@ Useful endpoints:
 - `GET /api/profile/cv`
 - `POST /api/profile/cv/parse`
 - `PUT /api/profile`
+- `GET /api/jobs`
+- `POST /api/jobs/scrape`
+- `PATCH /api/jobs/:id/status`
+- `POST /api/jobs/import`
 
 ## Apply D1 Schema
 
@@ -108,6 +112,56 @@ npm run dev:frontend
 
 If `GEMINI_API_KEY` is missing, the Worker returns a clear error and the frontend shows it in the upload section.
 
+## Test Job Feed Locally
+
+1. Start the Worker:
+
+```powershell
+npm run dev:worker
+```
+
+2. Start the frontend:
+
+```powershell
+npm run dev:frontend
+```
+
+3. Open `http://127.0.0.1:5173/empleos`.
+4. Click `Buscar nuevas ofertas`.
+5. Confirm the summary shows inserted, updated, duplicate, and platform error counts.
+6. Confirm jobs with `match_score > 0.5` appear by default.
+7. Use `Omitir` to mark a job as skipped.
+8. Confirm skipped jobs disappear from the default list.
+
+PowerShell API checks:
+
+```powershell
+Invoke-RestMethod -Uri http://127.0.0.1:8787/api/jobs
+Invoke-RestMethod -Uri http://127.0.0.1:8787/api/jobs/scrape -Method Post
+```
+
+Manual import fallback:
+
+```powershell
+$body = @{
+  title = "Técnico de soporte IT junior"
+  company = "Empresa manual"
+  location = "Madrid híbrido"
+  platform = "manual"
+  url = "https://example.com/jobs/manual-soporte-it"
+  description_raw = "Helpdesk, Microsoft 365, Windows, ticket handling, soporte usuarios, junior"
+} | ConvertTo-Json
+
+Invoke-RestMethod -Uri http://127.0.0.1:8787/api/jobs/import -Method Post -ContentType "application/json" -Body $body
+```
+
+Scraper limitations:
+
+- Phase 3 uses public pages and normal `fetch` only.
+- No login, captcha bypass, private APIs, Playwright, or auto-apply.
+- LinkedIn, Indeed, InfoJobs, or Tecnoempleo may block or change markup; the Worker reports those platform errors and continues.
+- Manual import is available when a platform requires manual checking.
+
 ## Build and Type Check
 
 ```powershell
@@ -116,6 +170,8 @@ npm run build
 ```
 
 ## Future Deployment Notes
+
+The public Pages project exists at `https://applyone.pages.dev`.
 
 Frontend Pages project:
 
@@ -132,4 +188,6 @@ npx wrangler secret put GEMINI_API_KEY --config ./wrangler.toml
 npx wrangler deploy
 ```
 
-Future phases will add LinkedIn OAuth, scraping, Playwright automation, cover letter generation, interview preparation, and GitHub Actions. Those features are intentionally not implemented in Phase 2.
+Production API wiring and deployment automation are not part of Phase 3.
+
+Future phases will add LinkedIn OAuth, Playwright automation, cover letter generation, interview preparation, and GitHub Actions. Those features are intentionally not implemented in Phase 3.
