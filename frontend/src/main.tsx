@@ -25,6 +25,7 @@ import JobFeed from "./pages/JobFeed";
 import InterviewPrep from "./pages/InterviewPrep";
 import SettingsPage from "./pages/Settings";
 import { getSession, login, logout, recordPublicVisit } from "./lib/api";
+import { I18nProvider, useI18n, type TranslationKey } from "./lib/i18n";
 import "./styles.css";
 
 const cvPath = "/cv/Aboulfazl_Saeedi_CV_English.pdf";
@@ -37,6 +38,42 @@ const navItems = [
   { to: "/app/entrevistas", label: "Entrevistas", icon: MessageSquareText },
   { to: "/app/ajustes", label: "Ajustes", icon: Settings }
 ];
+
+const navLabelKeys: Record<string, TranslationKey> = {
+  "/app": "nav.dashboard",
+  "/app/analytics": "nav.analytics",
+  "/app/perfil": "nav.profile",
+  "/app/empleos": "nav.jobs",
+  "/app/entrevistas": "nav.interviews",
+  "/app/ajustes": "nav.settings"
+};
+
+function navLabelKey(path: string) {
+  return navLabelKeys[path] || "nav.dashboard";
+}
+
+function LanguageToggle({ variant = "dark" }: { variant?: "dark" | "light" }) {
+  const { language, setLanguage } = useI18n();
+  const isDark = variant === "dark";
+
+  return (
+    <div className={`inline-flex rounded-md p-1 ${isDark ? "border border-white/12 bg-white/5" : "border border-black/10 bg-black/[0.04]"}`} aria-label="UI language">
+      {(["es", "en"] as const).map((option) => (
+        <button
+          key={option}
+          type="button"
+          onClick={() => setLanguage(option)}
+          className={`h-8 rounded px-3 text-xs font-bold transition ${
+            language === option ? (isDark ? "bg-brand text-black" : "bg-ink text-white") : isDark ? "text-white/72 hover:bg-white/10 hover:text-white" : "text-olive hover:bg-black/10"
+          }`}
+          aria-pressed={language === option}
+        >
+          {option.toUpperCase()}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 const skills = ["Windows/Linux support", "Active Directory", "Endpoint troubleshooting", "SIEM basics", "KQL", "Elastic Stack", "Ticketing and documentation", "Customer support"];
 const highlights = ["Technology Trainee on a CyberSOC track at Deloitte Madrid", "IT Technician internship experience in Malta", "Customer support experience with high-volume user requests", "Hands-on Windows Event Log and SIEM investigation labs"];
@@ -241,6 +278,7 @@ function LoginPage() {
 }
 
 function PrivateGate({ children }: { children: React.ReactNode }) {
+  const { t } = useI18n();
   const [state, setState] = useState<"loading" | "allowed" | "denied">("loading");
 
   useEffect(() => {
@@ -250,7 +288,7 @@ function PrivateGate({ children }: { children: React.ReactNode }) {
   }, []);
 
   if (state === "loading") {
-    return <main className="flex min-h-screen items-center justify-center bg-ink text-sm text-white/75">Loading ApplyOne...</main>;
+    return <main className="flex min-h-screen items-center justify-center bg-ink text-sm text-white/75">{t("common.loadingApplyOne")}</main>;
   }
 
   if (state === "denied") {
@@ -262,6 +300,7 @@ function PrivateGate({ children }: { children: React.ReactNode }) {
 
 function WorkspaceShell() {
   const navigate = useNavigate();
+  const { t } = useI18n();
 
   async function handleLogout() {
     await logout().catch(() => null);
@@ -272,21 +311,25 @@ function WorkspaceShell() {
     <PrivateGate>
       <div className="min-h-screen bg-[#f5f7f1] text-ink">
         <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-black/10 bg-ink px-4 py-5 text-white lg:block">
-          <div className="mb-8 px-2">
+          <div className="mb-8 px-2 [&>h1:last-of-type]:hidden">
             <p className="text-sm font-semibold uppercase tracking-wide text-brand">ApplyOne</p>
+            <h1 className="mt-1 text-2xl font-semibold">{t("nav.jobSearch")}</h1>
             <h1 className="mt-1 text-2xl font-semibold">Búsqueda laboral</h1>
+          </div>
+          <div className="mb-6 px-2">
+            <LanguageToggle />
           </div>
           <nav className="space-y-1">
             {navItems.map((item) => (
               <NavLink key={item.to} to={item.to} end={item.to === "/app"} className={({ isActive }) => `flex h-11 items-center gap-3 rounded-md px-3 text-sm font-medium transition ${isActive ? "bg-brand text-black" : "text-white/72 hover:bg-white/8 hover:text-white"}`}>
                 <item.icon className="h-4 w-4" aria-hidden="true" />
-                {item.label}
+                {t(navLabelKey(item.to))}
               </NavLink>
             ))}
           </nav>
           <button type="button" onClick={handleLogout} className="mt-8 inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-white/12 text-sm font-semibold text-white/80 hover:border-brand hover:text-brand">
             <LogOut className="h-4 w-4" />
-            Salir
+            {t("nav.signOut")}
           </button>
         </aside>
 
@@ -294,13 +337,16 @@ function WorkspaceShell() {
           <header className="sticky top-0 z-20 border-b border-black/10 bg-white/90 px-4 py-3 backdrop-blur lg:hidden">
             <div className="flex items-center justify-between">
               <span className="text-lg font-semibold">ApplyOne</span>
-              <button type="button" onClick={handleLogout} aria-label="Salir" className="flex h-9 w-9 items-center justify-center rounded-md bg-ink text-white">
-                <LogOut className="h-4 w-4" />
-              </button>
+              <div className="flex items-center gap-2">
+                <LanguageToggle variant="light" />
+                <button type="button" onClick={handleLogout} aria-label={t("nav.signOut")} className="flex h-9 w-9 items-center justify-center rounded-md bg-ink text-white">
+                  <LogOut className="h-4 w-4" />
+                </button>
+              </div>
             </div>
             <nav className="mt-3 grid grid-cols-6 gap-1">
               {navItems.map((item) => (
-                <NavLink key={item.to} to={item.to} end={item.to === "/app"} aria-label={item.label} className={({ isActive }) => `flex h-10 items-center justify-center rounded-md transition ${isActive ? "bg-ink text-white" : "bg-black/5 text-olive"}`}>
+                <NavLink key={item.to} to={item.to} end={item.to === "/app"} aria-label={t(navLabelKey(item.to))} className={({ isActive }) => `flex h-10 items-center justify-center rounded-md transition ${isActive ? "bg-ink text-white" : "bg-black/5 text-olive"}`}>
                   <item.icon className="h-4 w-4" aria-hidden="true" />
                 </NavLink>
               ))}
@@ -344,6 +390,8 @@ function App() {
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <App />
+    <I18nProvider>
+      <App />
+    </I18nProvider>
   </React.StrictMode>
 );

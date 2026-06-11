@@ -1,5 +1,6 @@
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { emptyStructuredCv, getProfile, parseCv, saveStructuredCv, type OwnerProfile, type StructuredCv } from "../lib/api";
+import { useI18n } from "../lib/i18n";
 import { extractPdfText } from "../lib/pdf";
 
 type CvStatus = {
@@ -24,11 +25,7 @@ function Field({ label, value, onChange }: { label: string; value: string; onCha
   return (
     <label className="block">
       <span className="text-xs font-semibold uppercase tracking-wide text-olive">{label}</span>
-      <input
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="mt-1 h-10 w-full rounded-md border border-black/10 bg-white px-3 text-sm outline-none focus:border-copper"
-      />
+      <input value={value} onChange={(event) => onChange(event.target.value)} className="mt-1 h-10 w-full rounded-md border border-black/10 bg-white px-3 text-sm outline-none focus:border-copper" />
     </label>
   );
 }
@@ -37,12 +34,7 @@ function TextArea({ label, value, onChange }: { label: string; value: string; on
   return (
     <label className="block">
       <span className="text-xs font-semibold uppercase tracking-wide text-olive">{label}</span>
-      <textarea
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        rows={3}
-        className="mt-1 w-full resize-y rounded-md border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-copper"
-      />
+      <textarea value={value} onChange={(event) => onChange(event.target.value)} rows={3} className="mt-1 w-full resize-y rounded-md border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-copper" />
     </label>
   );
 }
@@ -57,176 +49,84 @@ function SectionShell({ title, children }: { title: string; children: React.Reac
 }
 
 function StructuredCvEditor({ value, onChange }: { value: StructuredCv; onChange: (value: StructuredCv) => void }) {
+  const { t } = useI18n();
   const update = <K extends keyof StructuredCv>(key: K, nextValue: StructuredCv[K]) => onChange({ ...value, [key]: nextValue });
 
   return (
     <div className="space-y-4">
-      <SectionShell title="Experiencia">
+      <SectionShell title={t("profile.experience")}>
         {value.experience.map((item, index) => (
           <div key={index} className="grid gap-3 rounded-md bg-black/[0.03] p-3 md:grid-cols-2">
-            <Field
-              label="Empresa"
-              value={item.company}
-              onChange={(company) => update("experience", value.experience.map((entry, i) => (i === index ? { ...entry, company } : entry)))}
-            />
-            <Field
-              label="Rol"
-              value={item.role}
-              onChange={(role) => update("experience", value.experience.map((entry, i) => (i === index ? { ...entry, role } : entry)))}
-            />
-            <Field
-              label="Ubicación"
-              value={item.location}
-              onChange={(location) => update("experience", value.experience.map((entry, i) => (i === index ? { ...entry, location } : entry)))}
-            />
-            <Field
-              label="Inicio"
-              value={item.start}
-              onChange={(start) => update("experience", value.experience.map((entry, i) => (i === index ? { ...entry, start } : entry)))}
-            />
-            <Field
-              label="Fin"
-              value={item.end}
-              onChange={(end) => update("experience", value.experience.map((entry, i) => (i === index ? { ...entry, end } : entry)))}
-            />
+            <Field label={t("profile.company")} value={item.company} onChange={(company) => update("experience", value.experience.map((entry, i) => (i === index ? { ...entry, company } : entry)))} />
+            <Field label={t("profile.role")} value={item.role} onChange={(role) => update("experience", value.experience.map((entry, i) => (i === index ? { ...entry, role } : entry)))} />
+            <Field label={t("profile.location")} value={item.location} onChange={(location) => update("experience", value.experience.map((entry, i) => (i === index ? { ...entry, location } : entry)))} />
+            <Field label={t("profile.start")} value={item.start} onChange={(start) => update("experience", value.experience.map((entry, i) => (i === index ? { ...entry, start } : entry)))} />
+            <Field label={t("profile.end")} value={item.end} onChange={(end) => update("experience", value.experience.map((entry, i) => (i === index ? { ...entry, end } : entry)))} />
             <TextArea
-              label="Puntos"
+              label={t("profile.bullets")}
               value={item.bullets.join("\n")}
-              onChange={(bullets) =>
-                update(
-                  "experience",
-                  value.experience.map((entry, i) => (i === index ? { ...entry, bullets: bullets.split("\n").filter(Boolean) } : entry))
-                )
-              }
+              onChange={(bullets) => update("experience", value.experience.map((entry, i) => (i === index ? { ...entry, bullets: bullets.split("\n").filter(Boolean) } : entry)))}
             />
           </div>
         ))}
-        <button
-          type="button"
-          onClick={() => update("experience", [...value.experience, { company: "", role: "", location: "", start: "", end: "", bullets: [] }])}
-          className="h-10 rounded-md bg-ink px-3 text-sm font-medium text-white"
-        >
-          Añadir experiencia
+        <button type="button" onClick={() => update("experience", [...value.experience, { company: "", role: "", location: "", start: "", end: "", bullets: [] }])} className="h-10 rounded-md bg-ink px-3 text-sm font-medium text-white">
+          {t("profile.addExperience")}
         </button>
       </SectionShell>
 
-      <SectionShell title="Formación">
+      <SectionShell title={t("profile.education")}>
         {value.education.map((item, index) => (
           <div key={index} className="grid gap-3 rounded-md bg-black/[0.03] p-3 md:grid-cols-2">
-            <Field
-              label="Centro"
-              value={item.institution}
-              onChange={(institution) => update("education", value.education.map((entry, i) => (i === index ? { ...entry, institution } : entry)))}
-            />
-            <Field
-              label="Título"
-              value={item.degree}
-              onChange={(degree) => update("education", value.education.map((entry, i) => (i === index ? { ...entry, degree } : entry)))}
-            />
-            <Field
-              label="Área"
-              value={item.field}
-              onChange={(field) => update("education", value.education.map((entry, i) => (i === index ? { ...entry, field } : entry)))}
-            />
-            <Field
-              label="Inicio"
-              value={item.start}
-              onChange={(start) => update("education", value.education.map((entry, i) => (i === index ? { ...entry, start } : entry)))}
-            />
-            <Field
-              label="Fin"
-              value={item.end}
-              onChange={(end) => update("education", value.education.map((entry, i) => (i === index ? { ...entry, end } : entry)))}
-            />
+            <Field label={t("profile.institution")} value={item.institution} onChange={(institution) => update("education", value.education.map((entry, i) => (i === index ? { ...entry, institution } : entry)))} />
+            <Field label={t("profile.degree")} value={item.degree} onChange={(degree) => update("education", value.education.map((entry, i) => (i === index ? { ...entry, degree } : entry)))} />
+            <Field label={t("profile.field")} value={item.field} onChange={(field) => update("education", value.education.map((entry, i) => (i === index ? { ...entry, field } : entry)))} />
+            <Field label={t("profile.start")} value={item.start} onChange={(start) => update("education", value.education.map((entry, i) => (i === index ? { ...entry, start } : entry)))} />
+            <Field label={t("profile.end")} value={item.end} onChange={(end) => update("education", value.education.map((entry, i) => (i === index ? { ...entry, end } : entry)))} />
           </div>
         ))}
-        <button
-          type="button"
-          onClick={() => update("education", [...value.education, { institution: "", degree: "", field: "", start: "", end: "" }])}
-          className="h-10 rounded-md bg-ink px-3 text-sm font-medium text-white"
-        >
-          Añadir formación
+        <button type="button" onClick={() => update("education", [...value.education, { institution: "", degree: "", field: "", start: "", end: "" }])} className="h-10 rounded-md bg-ink px-3 text-sm font-medium text-white">
+          {t("profile.addEducation")}
         </button>
       </SectionShell>
 
-      <SectionShell title="Skills">
-        <TextArea label="Skills" value={value.skills.join("\n")} onChange={(skills) => update("skills", skills.split("\n").filter(Boolean))} />
+      <SectionShell title={t("profile.skills")}>
+        <TextArea label={t("profile.skills")} value={value.skills.join("\n")} onChange={(skills) => update("skills", skills.split("\n").filter(Boolean))} />
       </SectionShell>
 
-      <SectionShell title="Certificaciones">
+      <SectionShell title={t("profile.certifications")}>
         {value.certifications.map((item, index) => (
           <div key={index} className="grid gap-3 rounded-md bg-black/[0.03] p-3 md:grid-cols-3">
-            <Field
-              label="Nombre"
-              value={item.name}
-              onChange={(name) => update("certifications", value.certifications.map((entry, i) => (i === index ? { ...entry, name } : entry)))}
-            />
-            <Field
-              label="Emisor"
-              value={item.issuer}
-              onChange={(issuer) => update("certifications", value.certifications.map((entry, i) => (i === index ? { ...entry, issuer } : entry)))}
-            />
-            <Field
-              label="Fecha"
-              value={item.date}
-              onChange={(date) => update("certifications", value.certifications.map((entry, i) => (i === index ? { ...entry, date } : entry)))}
-            />
+            <Field label={t("profile.name")} value={item.name} onChange={(name) => update("certifications", value.certifications.map((entry, i) => (i === index ? { ...entry, name } : entry)))} />
+            <Field label={t("profile.issuer")} value={item.issuer} onChange={(issuer) => update("certifications", value.certifications.map((entry, i) => (i === index ? { ...entry, issuer } : entry)))} />
+            <Field label={t("profile.date")} value={item.date} onChange={(date) => update("certifications", value.certifications.map((entry, i) => (i === index ? { ...entry, date } : entry)))} />
           </div>
         ))}
-        <button
-          type="button"
-          onClick={() => update("certifications", [...value.certifications, { name: "", issuer: "", date: "" }])}
-          className="h-10 rounded-md bg-ink px-3 text-sm font-medium text-white"
-        >
-          Añadir certificación
+        <button type="button" onClick={() => update("certifications", [...value.certifications, { name: "", issuer: "", date: "" }])} className="h-10 rounded-md bg-ink px-3 text-sm font-medium text-white">
+          {t("profile.addCertification")}
         </button>
       </SectionShell>
 
-      <SectionShell title="Proyectos">
+      <SectionShell title={t("profile.projects")}>
         {value.projects.map((item, index) => (
           <div key={index} className="grid gap-3 rounded-md bg-black/[0.03] p-3 md:grid-cols-2">
-            <Field
-              label="Nombre"
-              value={item.name}
-              onChange={(name) => update("projects", value.projects.map((entry, i) => (i === index ? { ...entry, name } : entry)))}
-            />
-            <TextArea
-              label="Descripción"
-              value={item.description}
-              onChange={(description) => update("projects", value.projects.map((entry, i) => (i === index ? { ...entry, description } : entry)))}
-            />
+            <Field label={t("profile.name")} value={item.name} onChange={(name) => update("projects", value.projects.map((entry, i) => (i === index ? { ...entry, name } : entry)))} />
+            <TextArea label={t("profile.description")} value={item.description} onChange={(description) => update("projects", value.projects.map((entry, i) => (i === index ? { ...entry, description } : entry)))} />
           </div>
         ))}
-        <button
-          type="button"
-          onClick={() => update("projects", [...value.projects, { name: "", description: "" }])}
-          className="h-10 rounded-md bg-ink px-3 text-sm font-medium text-white"
-        >
-          Añadir proyecto
+        <button type="button" onClick={() => update("projects", [...value.projects, { name: "", description: "" }])} className="h-10 rounded-md bg-ink px-3 text-sm font-medium text-white">
+          {t("profile.addProject")}
         </button>
       </SectionShell>
 
-      <SectionShell title="Idiomas">
+      <SectionShell title={t("profile.languages")}>
         {value.languages.map((item, index) => (
           <div key={index} className="grid gap-3 rounded-md bg-black/[0.03] p-3 md:grid-cols-2">
-            <Field
-              label="Idioma"
-              value={item.language}
-              onChange={(language) => update("languages", value.languages.map((entry, i) => (i === index ? { ...entry, language } : entry)))}
-            />
-            <Field
-              label="Nivel"
-              value={item.level}
-              onChange={(level) => update("languages", value.languages.map((entry, i) => (i === index ? { ...entry, level } : entry)))}
-            />
+            <Field label={t("profile.language")} value={item.language} onChange={(language) => update("languages", value.languages.map((entry, i) => (i === index ? { ...entry, language } : entry)))} />
+            <Field label={t("profile.level")} value={item.level} onChange={(level) => update("languages", value.languages.map((entry, i) => (i === index ? { ...entry, level } : entry)))} />
           </div>
         ))}
-        <button
-          type="button"
-          onClick={() => update("languages", [...value.languages, { language: "", level: "" }])}
-          className="h-10 rounded-md bg-ink px-3 text-sm font-medium text-white"
-        >
-          Añadir idioma
+        <button type="button" onClick={() => update("languages", [...value.languages, { language: "", level: "" }])} className="h-10 rounded-md bg-ink px-3 text-sm font-medium text-white">
+          {t("profile.addLanguage")}
         </button>
       </SectionShell>
     </div>
@@ -234,6 +134,7 @@ function StructuredCvEditor({ value, onChange }: { value: StructuredCv; onChange
 }
 
 export default function Profile() {
+  const { t } = useI18n();
   const [profile, setProfile] = useState<OwnerProfile | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [rawText, setRawText] = useState("");
@@ -250,9 +151,9 @@ export default function Profile() {
         setStructuredCv(nextProfile.cv_structured || emptyStructuredCv());
       })
       .catch((reason: unknown) => {
-        setError(reason instanceof Error ? reason.message : "Error desconocido.");
+        setError(reason instanceof Error ? reason.message : t("profile.unknownError"));
       });
-  }, []);
+  }, [t]);
 
   const hasParsedCv = useMemo(
     () =>
@@ -274,12 +175,12 @@ export default function Profile() {
     setStatus({ type: "idle", message: "" });
 
     if (!selectedFile) {
-      setStatus({ type: "error", message: "Selecciona un PDF antes de analizarlo." });
+      setStatus({ type: "error", message: t("profile.selectPdf") });
       return;
     }
 
     if (selectedFile.type !== "application/pdf" && !selectedFile.name.toLowerCase().endsWith(".pdf")) {
-      setStatus({ type: "error", message: "El archivo debe ser un PDF." });
+      setStatus({ type: "error", message: t("profile.pdfOnly") });
       return;
     }
 
@@ -289,16 +190,16 @@ export default function Profile() {
       const extracted = await extractPdfText(selectedFile);
 
       if (!extracted) {
-        throw new Error("No se pudo extraer texto del PDF.");
+        throw new Error(t("profile.extractError"));
       }
 
       setRawText(extracted);
       const result = await parseCv(extracted);
       setStructuredCv(result.cv_structured);
       setProfile((current) => (current ? { ...current, cv_raw_text: result.cv_raw_text, cv_structured: result.cv_structured } : current));
-      setStatus({ type: "success", message: "CV analizado correctamente" });
+      setStatus({ type: "success", message: t("profile.parseSuccess") });
     } catch (reason) {
-      setStatus({ type: "error", message: reason instanceof Error ? reason.message : "Error al analizar el CV" });
+      setStatus({ type: "error", message: reason instanceof Error ? reason.message : t("profile.parseError") });
     } finally {
       setIsWorking(false);
     }
@@ -313,9 +214,9 @@ export default function Profile() {
       setProfile(updated);
       setRawText(updated.cv_raw_text || rawText);
       setStructuredCv(updated.cv_structured || structuredCv);
-      setStatus({ type: "success", message: "Cambios guardados correctamente" });
+      setStatus({ type: "success", message: t("profile.saveSuccess") });
     } catch (reason) {
-      setStatus({ type: "error", message: reason instanceof Error ? reason.message : "No se pudieron guardar los cambios." });
+      setStatus({ type: "error", message: reason instanceof Error ? reason.message : t("profile.saveError") });
     } finally {
       setIsWorking(false);
     }
@@ -326,7 +227,7 @@ export default function Profile() {
   }
 
   if (!profile) {
-    return <p className="rounded-lg bg-white p-4 text-sm text-olive">Cargando perfil...</p>;
+    return <p className="rounded-lg bg-white p-4 text-sm text-olive">{t("profile.loading")}</p>;
   }
 
   return (
@@ -347,75 +248,64 @@ export default function Profile() {
       <section className="rounded-lg border border-black/10 bg-white p-5 shadow-sm">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="text-sm font-medium text-copper">Subir CV</p>
-            <h3 className="mt-1 text-xl font-semibold">Extraer y analizar CV</h3>
+            <p className="text-sm font-medium text-copper">{t("profile.uploadCv")}</p>
+            <h3 className="mt-1 text-xl font-semibold">{t("profile.extractCv")}</h3>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">
-            <input
-              type="file"
-              accept="application/pdf,.pdf"
-              onChange={handleFileChange}
-              className="max-w-full rounded-md border border-black/10 bg-white px-3 py-2 text-sm"
-            />
-            <button
-              type="button"
-              onClick={handleParseCv}
-              disabled={isWorking}
-              className="h-10 rounded-md bg-copper px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isWorking ? "Analizando..." : "Extraer y analizar CV"}
+            <input type="file" accept="application/pdf,.pdf" onChange={handleFileChange} className="max-w-full rounded-md border border-black/10 bg-white px-3 py-2 text-sm" />
+            <button type="button" onClick={handleParseCv} disabled={isWorking} className="h-10 rounded-md bg-copper px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60">
+              {isWorking ? t("profile.analyzing") : t("profile.extractCv")}
             </button>
           </div>
         </div>
 
         {status.message ? (
           <p className={`mt-4 rounded-md p-3 text-sm ${status.type === "error" ? "bg-red-50 text-red-800" : "bg-green-50 text-green-800"}`}>
-            {status.type === "error" ? "Error al analizar el CV: " : ""}
+            {status.type === "error" ? `${t("profile.parseError")}: ` : ""}
             {status.message}
           </p>
         ) : null}
 
         <details className="mt-5 rounded-md border border-black/10 bg-black/[0.02] p-4" open={Boolean(rawText)}>
-          <summary className="cursor-pointer text-sm font-semibold">Texto extraído</summary>
-          <pre className="mt-3 max-h-64 overflow-auto whitespace-pre-wrap text-sm leading-6 text-olive">{rawText || "Todavía no hay texto extraído."}</pre>
+          <summary className="cursor-pointer text-sm font-semibold">{t("profile.extractedText")}</summary>
+          <pre className="mt-3 max-h-64 overflow-auto whitespace-pre-wrap text-sm leading-6 text-olive">{rawText || t("profile.noExtractedText")}</pre>
         </details>
       </section>
 
       <section className="grid gap-4 md:grid-cols-2">
-        <ListBlock title="Roles objetivo" items={profile.targetRoles} />
-        <ListBlock title="Idiomas por defecto" items={profile.languages} />
-        <ListBlock title="Formación por defecto" items={profile.education} />
-        <ListBlock title="Experiencia por defecto" items={profile.experience} />
-        <ListBlock title="Skills técnicos por defecto" items={profile.technicalSkills} />
-        <ListBlock title="Certificaciones por defecto" items={profile.certifications} />
-        <ListBlock title="Proyectos por defecto" items={profile.projects} />
+        <ListBlock title={t("profile.targetRoles")} items={profile.targetRoles} />
+        <ListBlock title={t("profile.defaultLanguages")} items={profile.languages} />
+        <ListBlock title={t("profile.defaultEducation")} items={profile.education} />
+        <ListBlock title={t("profile.defaultExperience")} items={profile.experience} />
+        <ListBlock title={t("profile.defaultSkills")} items={profile.technicalSkills} />
+        <ListBlock title={t("profile.defaultCertifications")} items={profile.certifications} />
+        <ListBlock title={t("profile.defaultProjects")} items={profile.projects} />
         <section className="rounded-lg border border-black/10 bg-white p-5">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-copper">Preferencias</h3>
-          <p className="mt-3 text-sm leading-6 text-olive">Mercado: {profile.targetMarket}</p>
-          <p className="mt-1 text-sm leading-6 text-olive">Idioma preferido: {profile.preferredLanguage}</p>
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-copper">{t("profile.preferences")}</h3>
+          <p className="mt-3 text-sm leading-6 text-olive">
+            {t("profile.market")}: {profile.targetMarket}
+          </p>
+          <p className="mt-1 text-sm leading-6 text-olive">
+            {t("profile.preferredLanguage")}: {profile.preferredLanguage}
+          </p>
         </section>
       </section>
 
       <section className="space-y-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-sm font-medium text-copper">Perfil estructurado</p>
-            <h3 className="mt-1 text-2xl font-semibold">{hasParsedCv ? "CV parseado editable" : "Sin CV parseado todavía"}</h3>
+            <p className="text-sm font-medium text-copper">{t("profile.structuredProfile")}</p>
+            <h3 className="mt-1 text-2xl font-semibold">{hasParsedCv ? t("profile.editableParsedCv") : t("profile.noParsedCv")}</h3>
           </div>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={isWorking}
-            className="h-10 rounded-md bg-ink px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            Guardar cambios
+          <button type="button" onClick={handleSave} disabled={isWorking} className="h-10 rounded-md bg-ink px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60">
+            {t("profile.saveChanges")}
           </button>
         </div>
 
         <StructuredCvEditor value={structuredCv} onChange={setStructuredCv} />
 
         <details className="rounded-lg border border-black/10 bg-white p-5">
-          <summary className="cursor-pointer text-sm font-semibold text-copper">Vista JSON del perfil estructurado</summary>
+          <summary className="cursor-pointer text-sm font-semibold text-copper">{t("profile.jsonView")}</summary>
           <pre className="mt-3 max-h-80 overflow-auto whitespace-pre-wrap text-xs leading-5 text-olive">{JSON.stringify(structuredCv, null, 2)}</pre>
         </details>
       </section>
