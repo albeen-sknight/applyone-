@@ -2,8 +2,8 @@ import React, { FormEvent, useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Link, Navigate, NavLink, Route, Routes, useNavigate } from "react-router-dom";
 import {
+  BarChart3,
   BriefcaseBusiness,
-  ClipboardList,
   Download,
   ExternalLink,
   FileText,
@@ -19,17 +19,19 @@ import {
   UserRound
 } from "lucide-react";
 import Dashboard from "./pages/Dashboard";
+import Analytics from "./pages/Analytics";
 import Profile from "./pages/Profile";
 import JobFeed from "./pages/JobFeed";
 import InterviewPrep from "./pages/InterviewPrep";
 import SettingsPage from "./pages/Settings";
-import { getSession, login, logout } from "./lib/api";
+import { getSession, login, logout, recordPublicVisit } from "./lib/api";
 import "./styles.css";
 
 const cvPath = "/cv/Aboulfazl_Saeedi_CV_English.pdf";
 
 const navItems = [
   { to: "/app", label: "Panel", icon: LayoutDashboard },
+  { to: "/app/analytics", label: "Analítica", icon: BarChart3 },
   { to: "/app/perfil", label: "Perfil", icon: UserRound },
   { to: "/app/empleos", label: "Ofertas", icon: BriefcaseBusiness },
   { to: "/app/entrevistas", label: "Entrevistas", icon: MessageSquareText },
@@ -41,6 +43,10 @@ const highlights = ["Technology Trainee on a CyberSOC track at Deloitte Madrid",
 const projects = ["ApplyOne private job application workspace", "Windows Event Log attack simulation lab", "Elastic Stack failed logon analysis", "Deloitte final project internal web app"];
 
 function PublicLanding() {
+  useEffect(() => {
+    recordPublicVisit({ path: window.location.pathname, referrer: document.referrer });
+  }, []);
+
   return (
     <main className="min-h-screen bg-portfolio text-white">
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 py-5 sm:px-6 lg:px-8">
@@ -184,6 +190,10 @@ function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    recordPublicVisit({ path: window.location.pathname, referrer: document.referrer });
+  }, []);
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsSubmitting(true);
@@ -288,7 +298,7 @@ function WorkspaceShell() {
                 <LogOut className="h-4 w-4" />
               </button>
             </div>
-            <nav className="mt-3 grid grid-cols-5 gap-1">
+            <nav className="mt-3 grid grid-cols-6 gap-1">
               {navItems.map((item) => (
                 <NavLink key={item.to} to={item.to} end={item.to === "/app"} aria-label={item.label} className={({ isActive }) => `flex h-10 items-center justify-center rounded-md transition ${isActive ? "bg-ink text-white" : "bg-black/5 text-olive"}`}>
                   <item.icon className="h-4 w-4" aria-hidden="true" />
@@ -300,6 +310,7 @@ function WorkspaceShell() {
           <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
             <Routes>
               <Route index element={<Dashboard />} />
+              <Route path="analytics" element={<Analytics />} />
               <Route path="perfil" element={<Profile />} />
               <Route path="empleos" element={<JobFeed />} />
               <Route path="entrevista" element={<InterviewPrep />} />

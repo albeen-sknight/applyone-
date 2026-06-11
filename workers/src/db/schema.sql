@@ -77,3 +77,17 @@ CREATE TABLE IF NOT EXISTS interview_sessions (
 CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
 CREATE INDEX IF NOT EXISTS idx_applications_job_id ON applications(job_id);
 CREATE INDEX IF NOT EXISTS idx_interview_sessions_application_id ON interview_sessions(application_id);
+
+CREATE TABLE IF NOT EXISTS visitor_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  created_at TEXT NOT NULL,
+  path TEXT NOT NULL,
+  referrer_origin TEXT,
+  country TEXT,
+  device_type TEXT,
+  daily_visitor_hash TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_visitor_events_created_at ON visitor_events(created_at);
+CREATE INDEX IF NOT EXISTS idx_visitor_events_path ON visitor_events(path);
+CREATE INDEX IF NOT EXISTS idx_visitor_events_daily_hash ON visitor_events(daily_visitor_hash);

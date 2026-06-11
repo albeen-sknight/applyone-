@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { BarChart3 } from "lucide-react";
 import ApplicationCard from "../components/ApplicationCard";
 import CoverLetterPreview from "../components/CoverLetterPreview";
 import { getApplicationStats, getApplications, markApplicationApplied, updateApplication, updateApplicationStatus, type Application, type ApplicationStatus, type ApplicationStats } from "../lib/api";
@@ -84,6 +86,20 @@ export default function Dashboard() {
         <ApplicationCard label="Response rate %" value={`${Math.round(stats.responseRate * 100)}%`} detail="Vista, entrevista, oferta o rechazo" />
         <ApplicationCard label="Interviews scheduled" value={stats.interviewsScheduled} detail="Estado entrevista" />
         <ApplicationCard label="This week's applications" value={stats.thisWeekApplications} detail="Creadas o aplicadas esta semana" />
+      </section>
+
+      <section className="rounded-lg border border-black/10 bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-copper">Analítica</p>
+            <h3 className="mt-1 text-base font-semibold">Visitas del portfolio público</h3>
+            <p className="mt-2 text-sm text-olive">Conteos agregados privados para saber cuantas personas abren el sitio.</p>
+          </div>
+          <Link to="/app/analytics" className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-ink px-4 text-sm font-semibold text-white hover:bg-copper">
+            <BarChart3 className="h-4 w-4" />
+            Ver analítica
+          </Link>
+        </div>
       </section>
 
       {success ? <p className="rounded-lg bg-green-50 p-4 text-sm text-green-800">{success}</p> : null}
