@@ -12,23 +12,7 @@ import {
   type JobFilters,
   type ScrapeSummary
 } from "../lib/api";
-
-const platforms = [
-  { value: "", label: "Todas" },
-  { value: "infojobs", label: "InfoJobs" },
-  { value: "linkedin", label: "LinkedIn" },
-  { value: "tecnoempleo", label: "Tecnoempleo" },
-  { value: "indeed", label: "Indeed" },
-  { value: "manual", label: "Manual" }
-];
-
-const statuses = [
-  { value: "", label: "No omitidas" },
-  { value: "new", label: "Nuevas" },
-  { value: "reviewed", label: "Revisadas" },
-  { value: "applied", label: "Aplicadas" },
-  { value: "skipped", label: "Omitidas" }
-];
+import { useI18n } from "../lib/i18n";
 
 type LetterModal = {
   job: Job;
@@ -39,15 +23,6 @@ type LetterModal = {
 
 function formatScore(score: number) {
   return `${Math.round(score * 100)}%`;
-}
-
-function statusLabel(status: Job["status"]) {
-  return {
-    new: "Nueva",
-    reviewed: "Revisada",
-    applied: "Aplicada",
-    skipped: "Omitida"
-  }[status];
 }
 
 function JobCard({
@@ -67,7 +42,14 @@ function JobCard({
   onManualRequired: (job: Job) => void;
   onMarkApplied: (job: Job) => void;
 }) {
-  const description = job.description_parsed || job.description_raw || "Sin descripción disponible.";
+  const { t } = useI18n();
+  const statusLabels: Record<Job["status"], string> = {
+    new: t("jobs.statusNew"),
+    reviewed: t("jobs.statusReviewed"),
+    applied: t("jobs.statusApplied"),
+    skipped: t("jobs.statusSkipped")
+  };
+  const description = job.description_parsed || job.description_raw || t("jobs.noDescription");
   const busy = busyJobId === job.id;
   const suggestedScript = job.platform === "infojobs" ? "apply:infojobs" : job.platform === "linkedin" ? "apply:linkedin" : "apply:generic";
   const command = `npm run ${suggestedScript} -- --job-id ${job.id}`;
@@ -78,7 +60,7 @@ function JobCard({
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-md bg-skyglass px-2 py-1 text-xs font-semibold uppercase text-ink">{job.platform}</span>
-            <span className="rounded-md bg-black/[0.06] px-2 py-1 text-xs font-medium text-olive">{statusLabel(job.status)}</span>
+            <span className="rounded-md bg-black/[0.06] px-2 py-1 text-xs font-medium text-olive">{statusLabels[job.status]}</span>
             <span className="rounded-md bg-copper px-2 py-1 text-xs font-semibold text-white">{formatScore(job.match_score)}</span>
           </div>
           <h3 className="mt-3 text-xl font-semibold">{job.title}</h3>
@@ -86,7 +68,7 @@ function JobCard({
           <p className="mt-1 text-sm text-olive">{job.location}</p>
         </div>
         <a href={job.url} target="_blank" rel="noreferrer" className="h-10 rounded-md border border-black/10 px-3 py-2 text-center text-sm font-semibold text-ink hover:bg-black/[0.04]">
-          Ver oferta
+          {t("jobs.viewJob")}
         </a>
       </div>
 
@@ -94,32 +76,30 @@ function JobCard({
 
       <div className="mt-4 flex flex-wrap gap-2">
         <button type="button" disabled={busy} onClick={() => onGenerateLetter(job)} className="h-9 rounded-md bg-copper px-3 text-sm font-medium text-white disabled:opacity-60">
-          {busy ? "Trabajando..." : "Generar carta"}
+          {busy ? t("jobs.working") : t("jobs.generateLetter")}
         </button>
         <button type="button" disabled={busy} onClick={() => onCreateDraft(job)} className="h-9 rounded-md bg-ink px-3 text-sm font-medium text-white disabled:opacity-60">
-          Crear borrador
+          {t("jobs.createDraft")}
         </button>
         <button type="button" disabled={busy} onClick={() => onMarkApplied(job)} className="h-9 rounded-md bg-black/[0.08] px-3 text-sm font-medium text-ink disabled:opacity-60">
-          Marcar como aplicado
+          {t("jobs.markApplied")}
         </button>
         <button type="button" disabled={busy} onClick={() => onManualRequired(job)} className="h-9 rounded-md bg-black/[0.08] px-3 text-sm font-medium text-ink disabled:opacity-60">
-          Aplicación manual
+          {t("jobs.manualApplication")}
         </button>
         <button type="button" onClick={() => onStatusChange(job.id, "reviewed")} className="h-9 rounded-md bg-black/[0.06] px-3 text-sm font-medium text-ink">
-          Marcar como revisada
+          {t("jobs.markReviewed")}
         </button>
         <button type="button" onClick={() => onStatusChange(job.id, "skipped")} className="h-9 rounded-md bg-black/[0.06] px-3 text-sm font-medium text-ink">
-          Omitir
+          {t("jobs.skip")}
         </button>
         <details className="w-full rounded-md border border-black/10 bg-black/[0.02] p-3">
-          <summary className="cursor-pointer text-sm font-semibold">Ver detalles</summary>
+          <summary className="cursor-pointer text-sm font-semibold">{t("jobs.viewDetails")}</summary>
           <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-olive">{description}</p>
         </details>
         <details className="w-full rounded-md border border-copper/20 bg-yellow-50 p-3">
-          <summary className="cursor-pointer text-sm font-semibold text-ink">Aplicación asistida</summary>
-          <p className="mt-3 text-sm leading-6 text-olive">
-            La automatización asistida se ejecuta localmente con Playwright. No envía solicitudes sin confirmación.
-          </p>
+          <summary className="cursor-pointer text-sm font-semibold text-ink">{t("jobs.assistedApplication")}</summary>
+          <p className="mt-3 text-sm leading-6 text-olive">{t("jobs.assistedDescription")}</p>
           <code className="mt-3 block overflow-x-auto rounded-md bg-white p-3 text-xs text-ink">{command}</code>
         </details>
       </div>
@@ -140,41 +120,38 @@ function CoverLetterModal({
   onReady: (modal: LetterModal) => void;
   onApplied: (modal: LetterModal) => void;
 }) {
+  const { t } = useI18n();
+
   return (
     <div className="fixed inset-0 z-50 overflow-auto bg-black/40 p-4">
       <section className="mx-auto max-w-3xl rounded-lg bg-white p-5 shadow-xl">
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>
-            <p className="text-sm font-medium text-copper">Carta de presentación</p>
+            <p className="text-sm font-medium text-copper">{t("jobs.coverLetter")}</p>
             <h3 className="mt-1 text-xl font-semibold">{modal.job.title}</h3>
             <p className="mt-1 text-sm text-olive">{modal.job.company}</p>
           </div>
           <button type="button" onClick={() => setModal(null)} className="h-9 rounded-md border border-black/10 px-3 text-sm font-medium">
-            Cancelar
+            {t("common.cancel")}
           </button>
         </div>
         {modal.warning ? <p className="mt-4 rounded-md bg-yellow-50 p-3 text-sm text-yellow-900">{modal.warning}</p> : null}
         <label className="mt-4 block">
-          <span className="text-sm font-semibold">Editar carta</span>
-          <textarea
-            value={modal.letter}
-            onChange={(event) => setModal({ ...modal, letter: event.target.value })}
-            rows={14}
-            className="mt-2 w-full resize-y rounded-md border border-black/10 px-3 py-2 text-sm leading-6 outline-none focus:border-copper"
-          />
+          <span className="text-sm font-semibold">{t("jobs.editLetter")}</span>
+          <textarea value={modal.letter} onChange={(event) => setModal({ ...modal, letter: event.target.value })} rows={14} className="mt-2 w-full resize-y rounded-md border border-black/10 px-3 py-2 text-sm leading-6 outline-none focus:border-copper" />
         </label>
         <div className="mt-4 flex flex-wrap gap-2">
           <button type="button" onClick={() => onSave(modal)} className="h-10 rounded-md bg-ink px-4 text-sm font-semibold text-white">
-            Guardar borrador
+            {t("jobs.saveDraft")}
           </button>
           <button type="button" onClick={() => onReady(modal)} className="h-10 rounded-md bg-copper px-4 text-sm font-semibold text-white">
-            Marcar como lista para aplicar
+            {t("jobs.markReady")}
           </button>
           <button type="button" onClick={() => onApplied(modal)} className="h-10 rounded-md bg-black/[0.08] px-4 text-sm font-semibold text-ink">
-            Marcar como aplicada
+            {t("jobs.markApplied")}
           </button>
           <button type="button" onClick={() => void navigator.clipboard.writeText(modal.letter)} className="h-10 rounded-md border border-black/10 px-4 text-sm font-semibold text-ink">
-            Copiar al portapapeles
+            {t("jobs.copyClipboard")}
           </button>
         </div>
       </section>
@@ -183,6 +160,22 @@ function CoverLetterModal({
 }
 
 export default function JobFeed() {
+  const { t } = useI18n();
+  const platforms = [
+    { value: "", label: t("jobs.all") },
+    { value: "infojobs", label: "InfoJobs" },
+    { value: "linkedin", label: "LinkedIn" },
+    { value: "tecnoempleo", label: "Tecnoempleo" },
+    { value: "indeed", label: "Indeed" },
+    { value: "manual", label: "Manual" }
+  ];
+  const statuses = [
+    { value: "", label: t("jobs.notSkipped") },
+    { value: "new", label: t("jobs.newPlural") },
+    { value: "reviewed", label: t("jobs.reviewedPlural") },
+    { value: "applied", label: t("jobs.appliedPlural") },
+    { value: "skipped", label: t("jobs.skippedPlural") }
+  ];
   const [jobs, setJobs] = useState<Job[]>([]);
   const [filters, setFilters] = useState<JobFilters>({ minScore: "0.5" });
   const [summary, setSummary] = useState<ScrapeSummary | null>(null);
@@ -202,7 +195,7 @@ export default function JobFeed() {
       const data = await getJobs(nextFilters);
       setJobs(data.jobs);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "No se pudieron cargar las ofertas.");
+      setError(reason instanceof Error ? reason.message : t("jobs.loadError"));
     } finally {
       setIsLoading(false);
     }
@@ -226,7 +219,7 @@ export default function JobFeed() {
       setSummary(result);
       await loadJobs(filters);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "No se pudo buscar nuevas ofertas.");
+      setError(reason instanceof Error ? reason.message : t("jobs.scrapeError"));
     } finally {
       setIsScraping(false);
     }
@@ -239,7 +232,7 @@ export default function JobFeed() {
     try {
       await action();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "No se pudo completar la acción.");
+      setError(reason instanceof Error ? reason.message : t("jobs.actionError"));
     } finally {
       setBusyJobId("");
     }
@@ -250,14 +243,14 @@ export default function JobFeed() {
       await updateJobStatus(id, status);
       await loadJobs(filters);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "No se pudo actualizar el estado.");
+      setError(reason instanceof Error ? reason.message : t("jobs.statusError"));
     }
   }
 
   function handleCreateDraft(job: Job, status: ApplicationStatus = "draft") {
     void withJobBusy(job, async () => {
       await createApplicationDraft({ job_id: job.id, status });
-      setSuccess(status === "manual_required" ? "Aplicación manual registrada." : "Borrador creado.");
+      setSuccess(status === "manual_required" ? t("jobs.manualSuccess") : t("jobs.draftSuccess"));
     });
   }
 
@@ -273,7 +266,7 @@ export default function JobFeed() {
       const app = await createApplicationDraft({ job_id: job.id, status: "ready_to_apply" });
       await markApplicationApplied(app.id);
       await loadJobs(filters);
-      setSuccess("Aplicación marcada como aplicada manualmente.");
+      setSuccess(t("jobs.appliedSuccess"));
     });
   }
 
@@ -281,7 +274,7 @@ export default function JobFeed() {
     void withJobBusy(modal.job, async () => {
       await updateApplication(modal.applicationId, { cover_letter_used: modal.letter, status });
       setLetterModal(null);
-      setSuccess(status === "ready_to_apply" ? "Carta guardada y lista para aplicar." : "Carta guardada como borrador.");
+      setSuccess(status === "ready_to_apply" ? t("jobs.readySuccess") : t("jobs.letterDraftSuccess"));
     });
   }
 
@@ -291,7 +284,7 @@ export default function JobFeed() {
       await markApplicationApplied(modal.applicationId);
       setLetterModal(null);
       await loadJobs(filters);
-      setSuccess("Aplicación marcada como aplicada manualmente.");
+      setSuccess(t("jobs.appliedSuccess"));
     });
   }
 
@@ -301,17 +294,17 @@ export default function JobFeed() {
 
       <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="text-sm font-medium text-copper">Job Feed</p>
-          <h2 className="mt-1 text-3xl font-semibold">Ofertas recomendadas</h2>
+          <p className="text-sm font-medium text-copper">{t("jobs.kicker")}</p>
+          <h2 className="mt-1 text-3xl font-semibold">{t("jobs.title")}</h2>
         </div>
         <button type="button" onClick={handleScrape} disabled={isScraping} className="h-11 rounded-md bg-copper px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60">
-          {isScraping ? "Buscando..." : "Buscar nuevas ofertas"}
+          {isScraping ? t("jobs.searching") : t("jobs.searchNew")}
         </button>
       </section>
 
       <section className="grid gap-3 rounded-lg border border-black/10 bg-white p-4 shadow-sm md:grid-cols-4">
         <label className="block">
-          <span className="text-xs font-semibold uppercase tracking-wide text-olive">Platform</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-olive">{t("common.platform")}</span>
           <select value={filters.platform || ""} onChange={(event) => void handleFilterChange({ ...filters, platform: event.target.value })} className="mt-1 h-10 w-full rounded-md border border-black/10 bg-white px-3 text-sm">
             {platforms.map((platform) => (
               <option key={platform.value} value={platform.value}>
@@ -322,7 +315,7 @@ export default function JobFeed() {
         </label>
 
         <label className="block">
-          <span className="text-xs font-semibold uppercase tracking-wide text-olive">Status</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-olive">{t("common.status")}</span>
           <select value={filters.status || ""} onChange={(event) => void handleFilterChange({ ...filters, status: event.target.value })} className="mt-1 h-10 w-full rounded-md border border-black/10 bg-white px-3 text-sm">
             {statuses.map((status) => (
               <option key={status.value} value={status.value}>
@@ -333,12 +326,12 @@ export default function JobFeed() {
         </label>
 
         <label className="block">
-          <span className="text-xs font-semibold uppercase tracking-wide text-olive">Minimum match score</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-olive">{t("jobs.minimumScore")}</span>
           <input type="number" min="0" max="1" step="0.05" value={filters.minScore || "0.5"} onChange={(event) => void handleFilterChange({ ...filters, minScore: event.target.value })} className="mt-1 h-10 w-full rounded-md border border-black/10 bg-white px-3 text-sm" />
         </label>
 
         <label className="block">
-          <span className="text-xs font-semibold uppercase tracking-wide text-olive">Search text</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-olive">{t("jobs.searchText")}</span>
           <input
             value={filters.q || ""}
             onChange={(event) => setFilters({ ...filters, q: event.target.value })}
@@ -354,7 +347,7 @@ export default function JobFeed() {
       {summary ? (
         <section className="rounded-lg border border-black/10 bg-white p-4 shadow-sm">
           <p className="text-sm font-semibold text-ink">
-            Resultado: {summary.inserted} insertadas, {summary.updated} actualizadas, {summary.skippedDuplicates} duplicadas omitidas.
+            {t("jobs.result")}: {summary.inserted} {t("jobs.inserted")}, {summary.updated} {t("jobs.updated")}, {summary.skippedDuplicates} {t("jobs.duplicatesSkipped")}.
           </p>
           {platformErrors.length > 0 ? (
             <ul className="mt-3 space-y-1 text-sm text-red-800">
@@ -370,11 +363,11 @@ export default function JobFeed() {
 
       {success ? <p className="rounded-lg bg-green-50 p-4 text-sm text-green-800">{success}</p> : null}
       {error ? <p className="rounded-lg bg-red-50 p-4 text-sm text-red-800">{error}</p> : null}
-      {isLoading ? <p className="rounded-lg bg-white p-4 text-sm text-olive">Cargando ofertas...</p> : null}
+      {isLoading ? <p className="rounded-lg bg-white p-4 text-sm text-olive">{t("jobs.loading")}</p> : null}
 
       <section className="space-y-4">
         {!isLoading && jobs.length === 0 ? (
-          <p className="rounded-lg bg-white p-5 text-sm text-olive">No hay ofertas por encima del umbral actual.</p>
+          <p className="rounded-lg bg-white p-5 text-sm text-olive">{t("jobs.empty")}</p>
         ) : (
           jobs.map((job) => (
             <JobCard
