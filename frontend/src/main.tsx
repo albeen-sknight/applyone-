@@ -204,6 +204,14 @@ function PublicLanding() {
           </section>
         </div>
       </section>
+
+      <footer className="border-t border-white/10 bg-ink px-4 py-5 text-center text-xs leading-6 text-white/55 sm:px-6 lg:px-8">
+        &copy; 2026 Aboulfazl Saeedi. ApplyOne is licensed under the{" "}
+        <a href="https://github.com/albeen-sknight/applyone-/blob/main/LICENSE" target="_blank" rel="noreferrer" className="font-semibold text-brand hover:text-brandSoft">
+          MIT License
+        </a>
+        .
+      </footer>
     </main>
   );
 }
