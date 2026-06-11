@@ -140,6 +140,20 @@ export type ScrapeSummary = {
   errors: Array<{ platform: JobPlatform; error: string }>;
 };
 
+export type AnalyticsSummary = {
+  totalViews: number;
+  viewsToday: number;
+  viewsLast7Days: number;
+  viewsLast30Days: number;
+  approximateUniqueToday: number;
+  approximateUniqueLast7Days: number;
+  topPaths: Array<{ name: string; count: number }>;
+  topReferrers: Array<{ name: string; count: number }>;
+  viewsByDay: Array<{ day: string; views: number }>;
+  countries: Array<{ name: string; count: number }>;
+  deviceTypes: Array<{ name: string; count: number }>;
+};
+
 export type JobFilters = {
   platform?: string;
   status?: string;
@@ -206,6 +220,33 @@ export async function login(password: string): Promise<{ authenticated: boolean 
 export async function logout(): Promise<{ authenticated: boolean }> {
   const response = await apiFetch("/api/auth/logout", { method: "POST" });
   return parseJsonResponse<{ authenticated: boolean }>(response);
+}
+
+export function recordPublicVisit(input: { path: string; referrer: string }) {
+  const body = JSON.stringify(input);
+  const url = apiUrl("/api/public/visit");
+
+  try {
+    if ("sendBeacon" in navigator) {
+      const sent = navigator.sendBeacon(url, new Blob([body], { type: "application/json" }));
+      if (sent) return;
+    }
+
+    void fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body,
+      credentials: "omit",
+      keepalive: true
+    }).catch(() => null);
+  } catch {
+    // Public analytics is intentionally best-effort.
+  }
+}
+
+export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {
+  const response = await apiFetch("/api/analytics/summary");
+  return parseJsonResponse<AnalyticsSummary>(response);
 }
 
 export async function getProfile(): Promise<OwnerProfile> {

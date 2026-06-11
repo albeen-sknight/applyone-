@@ -1,5 +1,6 @@
 import { handleApply } from "./routes/apply";
 import { handleApplications } from "./routes/applications";
+import { handleAnalyticsSummary, handlePublicVisit } from "./routes/analytics";
 import { handleAuth } from "./routes/auth";
 import { handleCoverLetter } from "./routes/coverletter";
 import { handleInterview } from "./routes/interview";
@@ -14,7 +15,15 @@ const jsonHeaders = {
   "content-type": "application/json; charset=utf-8"
 };
 
-const defaultAllowedOrigins = ["https://applyone.pages.dev", "http://127.0.0.1:5173", "http://localhost:5173"];
+const defaultAllowedOrigins = [
+  "https://applyone.pages.dev",
+  "http://127.0.0.1:5173",
+  "http://localhost:5173",
+  "http://127.0.0.1:5174",
+  "http://localhost:5174",
+  "http://127.0.0.1:5175",
+  "http://localhost:5175"
+];
 
 export function json(data: unknown, init: ResponseInit = {}) {
   return new Response(JSON.stringify(data, null, 2), {
@@ -66,7 +75,7 @@ function withCors(response: Response, request: Request, env: ApplyOneEnv) {
 }
 
 function isPublicApi(pathname: string) {
-  return pathname === "/api/auth/login" || pathname === "/api/auth/logout" || pathname === "/api/auth/session";
+  return pathname === "/api/public/visit" || pathname === "/api/auth/login" || pathname === "/api/auth/logout" || pathname === "/api/auth/session";
 }
 
 const routes: Record<string, RouteHandler> = {
@@ -79,8 +88,10 @@ const routes: Record<string, RouteHandler> = {
   "/api/auth/session": handleAuth,
   "/api/jobs": handleJobs,
   "/api/apply": handleApply,
+  "/api/analytics/summary": handleAnalyticsSummary,
   "/api/coverletter": handleCoverLetter,
-  "/api/interview": handleInterview
+  "/api/interview": handleInterview,
+  "/api/public/visit": handlePublicVisit
 };
 
 export default {

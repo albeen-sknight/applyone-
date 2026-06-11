@@ -37,6 +37,7 @@ The public CV at `frontend/public/cv/Aboulfazl_Saeedi_CV_English.pdf` is intenti
 - Cover letter draft generation.
 - Assisted local Playwright scripts that stop before submission.
 - Text interview preparation with saved session history.
+- Private, first-party visitor analytics for aggregate public portfolio counts.
 - Cloudflare Worker API, D1 database, and Pages frontend.
 
 ## Requirements
@@ -81,6 +82,7 @@ Useful routes:
 - `/app/perfil` profile and CV parsing
 - `/app/empleos` job feed
 - `/app/entrevistas` interview prep
+- `/app/analytics` private public-portfolio visit counts
 - `/app/ajustes` settings
 
 ## Worker Secrets
@@ -201,6 +203,7 @@ GEMINI_MODEL = "gemini-2.5-flash-lite"
 - Private API routes require the signed owner session cookie.
 - CORS allows credentials only for configured origins.
 - The public page does not read private D1 data.
+- Public visitor analytics are first-party and aggregate only. They store page path, referrer origin, Cloudflare country, simple device type, and an approximate daily unique visitor HMAC derived server-side from IP, user-agent, and UTC date. Raw IP addresses and full user-agent strings are not stored, analytics cookies/localStorage are not used, and the private summary is available only after owner login.
 - Scraper output is treated as plain text, not executable HTML.
 - The frontend does not use `dangerouslySetInnerHTML` for scraped job content.
 - Playwright scripts run locally, do not store credentials, do not bypass CAPTCHA, and stop before final submission.
