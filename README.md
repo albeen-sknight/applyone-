@@ -280,6 +280,10 @@ Local smoke checks:
 
 Replace the profile copy, links, icons, and CV when publishing a fork for another person.
 
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
 ## GitHub Security
 
 Repository security settings should be maintained in GitHub Settings:

@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "description": "ApplyOne Phase 1 foundation",
+  "license": "MIT",
   "workspaces": [
     "frontend",
     "workers"
